@@ -1,0 +1,34 @@
+Query(
+  Lambda(
+    "",
+    Let(
+      {
+        cols: Paginate(Collections()),
+        eventList: Map(
+          Var("cols"),
+          Lambda(
+            "c",
+            Filter(
+              Paginate(Events(Documents(Var("c")))),
+              Lambda(
+                "record",
+                Equals(Select(["action"], Var("record")), "remove")
+              )
+            )
+          )
+        ),
+        res: Map(
+          Var("eventList"),
+          Lambda("r", If(IsNonEmpty(Var("r")), Var("r"), null))
+        )
+      },
+      Map(
+        Filter(Var("res"), Lambda("f", Not(IsNull(Var("f"))))),
+        Lambda(
+          "f",
+          Map(Var("f"), Lambda("event", Select("document", Var("event"))))
+        )
+      )
+    )
+  )
+)
