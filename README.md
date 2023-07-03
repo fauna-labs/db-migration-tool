@@ -15,6 +15,6 @@ Steps:
 3. Generate admin key for database B
 4. Run the script `migrate-db.js`
    - Specify the correct secret for each database in the client configuration.
-   - Specify the timestamp on line 105 - all events after this timestamp will be copied over.
+   - Specify the timestamp on line 106 - all events after this timestamp will be copied over.
 
 Note: Any new schema documents (collections, indexes) created after the snapshot was copied will not be migrated. 
