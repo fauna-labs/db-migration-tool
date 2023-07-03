@@ -1,0 +1,41 @@
+Query(
+  Lambda(
+    ["targetTime", "coll"],
+    Let(
+      {
+        c: If(
+          IsCollection(Var("coll")),
+          Select("name", Get(Var("coll"))),
+          Var("coll")
+        ),
+        docs: Paginate(Documents(Collection(Var("c"))), { size: 1000 }),
+        eventList: Map(
+          Var("docs"),
+          Lambda(
+            "r",
+            Filter(
+              Paginate(Events(Var("r"))),
+              Lambda("d", LT(Var("targetTime"), Select("ts", Var("d"))))
+            )
+          )
+        ),
+        filtered: Filter(Var("eventList"), Lambda("el", IsNonEmpty(Var("el"))))
+      },
+      Map(
+        Var("filtered"),
+        Lambda(
+          "res",
+          Map(
+            Var("res"),
+            Lambda("event", {
+              ts: Select("ts", Var("event")),
+              doc: Select("document", Var("event")),
+              action: Select("action", Var("event")),
+              data: Select("data", Var("event"))
+            })
+          )
+        )
+      )
+    )
+  )
+)
