@@ -1,28 +1,37 @@
 Query(
   Lambda(
-    ["targetTime", "coll"],
+    ["targetTime", "indexName", "size", "after", "before"],
     Let(
       {
-        c: If(
-          IsCollection(Var("coll")),
-          Select("name", Get(Var("coll"))),
-          Var("coll")
+        match: Match(Index(Var("indexName"))),
+        page: If(
+          Equals(Var("before"), null),
+          If(
+            Equals(Var("after"), null),
+            Paginate(Var("match"), { size: Var("size") }),
+            Paginate(Var("match"), { after: Var("after"), size: Var("size") })
+          ),
+          Paginate(Var("match"), { before: Var("before"), size: Var("size") })
         ),
-        docs: Paginate(Documents(Collection(Var("c"))), { size: 1000 }),
-        eventList: Map(
-          Var("docs"),
+        filtered: Filter(
+          Var("page"),
+          Lambda(["t", "r"], LT(Var("targetTime"), Var("t")))
+        ),
+        refs: Map(Var("filtered"), Lambda(["t", "r"], Var("r"))),
+        eventList: Map(Var("refs"), Lambda("e", Paginate(Events(Var("e"))))),
+        recent: Map(
+          Var("eventList"),
           Lambda(
-            "r",
+            "el",
             Filter(
-              Paginate(Events(Var("r"))),
-              Lambda("d", LT(Var("targetTime"), Select("ts", Var("d"))))
+              Var("el"),
+              Lambda("t", LT(Var("targetTime"), Select("ts", Var("t"))))
             )
           )
-        ),
-        filtered: Filter(Var("eventList"), Lambda("el", IsNonEmpty(Var("el"))))
+        )
       },
       Map(
-        Var("filtered"),
+        Var("recent"),
         Lambda(
           "res",
           Map(
