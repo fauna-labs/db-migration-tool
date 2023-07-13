@@ -24,7 +24,13 @@ Query(
           )
         )
       },
-      Map(Var("removeEvents"), Lambda("e", Select("document", Var("e"))))
+      Map(
+        Var("removeEvents"),
+        Lambda("e", {
+          ref: Select("document", Var("e")),
+          ts: Select("ts", Var("e"))
+        })
+      )
     )
   )
 )

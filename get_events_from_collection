@@ -1,6 +1,6 @@
 Query(
   Lambda(
-    ["targetTime", "indexName", "size", "after", "before"],
+    ["startTime", "endTime", "indexName", "size", "after", "before"],
     Let(
       {
         match: Match(Index(Var("indexName"))),
@@ -15,7 +15,10 @@ Query(
         ),
         filtered: Filter(
           Var("page"),
-          Lambda(["t", "r"], LT(Var("targetTime"), Var("t")))
+          Lambda(
+            ["t", "r"],
+            And(LT(Var("startTime"), Var("t")), GTE(Var("endTime"), Var("t")))
+          )
         ),
         refs: Map(Var("filtered"), Lambda(["t", "r"], Var("r"))),
         eventList: Map(Var("refs"), Lambda("e", Paginate(Events(Var("e"))))),
@@ -25,7 +28,13 @@ Query(
             "el",
             Filter(
               Var("el"),
-              Lambda("t", LT(Var("targetTime"), Select("ts", Var("t"))))
+              Lambda(
+                "t",
+                And(
+                  LT(Var("startTime"), Select("ts", Var("t"))),
+                  GTE(Var("endTime"), Select("ts", Var("t")))
+                )
+              )
             )
           )
         )

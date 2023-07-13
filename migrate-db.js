@@ -5,15 +5,16 @@ const { Let, Var, ToMicros, Time, Call, Exists, If, Create, Update, Delete } =
 
 //Client for source DB
 var classicClient = new fauna.Client({
-  secret: "secret-src",
+  secret: "secret",
 });
 //Client for Destination DB
 var usClient = new fauna.Client({
-  secret: "secret-dest",
+  secret: "secret",
 });
 
 async function applyEvents(e) {
   const docRef = e.doc;
+  const docTs = e.ts;
   const docData = e.data;
   switch (e.action) {
     case "create":
@@ -30,7 +31,7 @@ async function applyEvents(e) {
       );
       await usClient
         .query(createQuery)
-        .then((r) => console.log(r))
+        .then((r) => r)
         .catch((err) => console.error("Error: %s", err));
       break;
     case "update":
@@ -47,7 +48,7 @@ async function applyEvents(e) {
       );
       await usClient
         .query(updateQuery)
-        .then((r) => console.log(r))
+        .then((r) => r)
         .catch((err) => console.error("Error: %s", err));
       break;
     case "delete":
@@ -73,7 +74,9 @@ async function applyDeletes(ref) {
     .catch((err) => console.error("Error: %s", err));
 }
 
-async function getRemoveEvents(ts, coll, size, before, after) {
+export async function getRemoveEvents(ts, coll, size, before, after) {
+  var lastProcessedRef = null;
+  var lastProcessedTS = null;
   const qry = Let(
     {
       ts: ToMicros(Time(ts)),
@@ -95,24 +98,47 @@ async function getRemoveEvents(ts, coll, size, before, after) {
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
 
-  res.data.map((r) => applyDeletes(r));
+  const len = res.data.length;
+  if (len > 0) {
+    lastProcessedRef = res.data[len - 1].ref;
+    lastProcessedTS = res.data[len - 1].ts;
+  }
+
+  res.data.map((r) => applyDeletes(r.ref));
 
   if (res.after) {
-    getRemoveEvents(ts, coll, size, before, res.after);
+    if (
+      res.after.document != lastProcessedRef &&
+      res.after.ts != lastProcessedTS
+    )
+      return getRemoveEvents(ts, coll, size, before, res.after);
   }
+
+  return [lastProcessedRef, lastProcessedTS];
 }
 
-async function getAllEvents(ts, index, size, before, after) {
+export async function getAllEvents(
+  startTime,
+  endTime,
+  index,
+  size,
+  before,
+  after
+) {
+  var lastProcessedRef = null;
+  var lastProcessedTS = null;
   const qry = Let(
     {
-      ts: ToMicros(Time(ts)),
+      startTime: ToMicros(Time(startTime)),
+      endTime: endTime,
       index: index,
       size: size,
       before: before,
       after: after,
     },
     Call("get_events_from_collection", [
-      Var("ts"),
+      Var("startTime"),
+      Var("endTime"),
       Var("index"),
       Var("size"),
       Var("after"),
@@ -124,20 +150,55 @@ async function getAllEvents(ts, index, size, before, after) {
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
 
+  const len = events.data.length;
+  if (len > 0) {
+    lastProcessedRef = events.data.slice(-1)[0].data.slice(-1)[0].doc;
+    lastProcessedTS = events.data.slice(-1)[0].data.slice(-1)[0].ts;
+  }
+
   events.data.map((ei) => ei.data.map((e) => applyEvents(e)));
 
   if (events.after) {
-    getAllEvents(ts, index, size, before, events.after);
+    if (
+      events.after[1] != lastProcessedRef &&
+      events.after[0] != lastProcessedTS
+    )
+      return getAllEvents(
+        startTime,
+        endTime,
+        index,
+        size,
+        before,
+        events.after
+      );
   }
+
+  return [lastProcessedRef, lastProcessedTS];
 }
 
-const targetTime = "2023-07-09T00:00:00Z";
-const coll = "Book"; //collection name
-const index = "book_modified_docs"; //index name
-const size = 100; //page size
-const after = null;
-const before = null;
+const run = async () => {
+  const targetTime = "2023-07-01T00:00:00Z";
+  const coll = "Genre"; //collection name
+  const index = "Genre_Events"; //index name
+  const size = 5; //page size
+  const after = null;
+  const before = null;
 
-getAllEvents(targetTime, index, size, after, before);
+  const afterRemove = await getRemoveEvents(
+    targetTime,
+    coll,
+    size,
+    before,
+    after
+  )
+    .then((res) => res)
+    .catch((e) => console.log(e));
+  const endTime = afterRemove[1];
+  //console.log(endTime);
+  await getAllEvents(targetTime, endTime, index, size, before, after)
+    .then((ev) => ev)
+    .catch((e) => console.log(e));
+};
+//
 
-getRemoveEvents(targetTime, coll, size, after, before);
+run();
