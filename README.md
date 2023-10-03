@@ -18,8 +18,8 @@ Steps:
 1. Create the UDFs `get_events_from_collection` and `get_remove_events_from_collection` in the source database(A)
 2. Create a database(B) in the target RG from the latest available snapshot of the database A.
 3. Generate admin key for database B
-4. Run the script `migrate-db.js`
-   - Specify the correct secret for each database in the client configuration.
-   - Specify the timestamp, collection name, index name and desired page size on lines 134 to 137. All events after the specified timestamp will be copied over.
-
+4. Run the script in `main.js`
+   - Specify the timestamp, collection name, index name, desired duration in `main.js`
+   - Specify the correct secret for each database in the client configuration in `migrate-db.js`
+     
 Note: Any new schema documents (collections, indexes) created after the snapshot was copied will not be migrated.
