@@ -1,37 +1,58 @@
 Query(
   Lambda(
-    ["targetTime", "indexName", "size", "after", "before"],
+    ["startTime", "indexName", "interval", "size", "after", "before"],
     Let(
       {
         match: Match(Index(Var("indexName"))),
+        endTime: ToMicros(
+          TimeAdd(
+            Epoch(Var("startTime"), "microseconds"),
+            Var("interval"),
+            "minutes"
+          )
+        ),
         page: If(
           Equals(Var("before"), null),
           If(
             Equals(Var("after"), null),
-            Paginate(Var("match"), { size: Var("size") }),
-            Paginate(Var("match"), { after: Var("after"), size: Var("size") })
+            Paginate(Range(Var("match"), Var("startTime"), []), {
+              size: Var("size")
+            }),
+            Paginate(Range(Var("match"), Var("startTime"), []), {
+              after: Var("after"),
+              size: Var("size")
+            })
           ),
-          Paginate(Var("match"), { before: Var("before"), size: Var("size") })
+          Paginate(Range(Var("match"), Var("startTime"), []), {
+            before: Var("before"),
+            size: Var("size")
+          })
         ),
-        filtered: Filter(
-          Var("page"),
-          Lambda(["t", "r"], LT(Var("targetTime"), Var("t")))
+        refs: Map(Var("page"), Lambda(["t", "r"], Var("r"))),
+        eventList: Map(
+          Var("refs"),
+          Lambda("e", Paginate(Events(Var("e")), { size: 100000 }))
         ),
-        refs: Map(Var("filtered"), Lambda(["t", "r"], Var("r"))),
-        eventList: Map(Var("refs"), Lambda("e", Paginate(Events(Var("e"))))),
         recent: Map(
           Var("eventList"),
           Lambda(
             "el",
             Filter(
               Var("el"),
-              Lambda("t", LT(Var("targetTime"), Select("ts", Var("t"))))
+              Lambda(
+                "t",
+                And(
+                  LTE(Var("startTime"), Select("ts", Var("t"))),
+                  GT(Var("endTime"), Select("ts", Var("t")))
+                )
+              )
             )
           )
-        )
+        ),
+        filtered: Filter(Var("recent"), Lambda("el", IsNonEmpty(Var("el"))))
       },
       Map(
-        Var("recent"),
+        Var("filtered"),
         Lambda(
           "res",
           Map(
