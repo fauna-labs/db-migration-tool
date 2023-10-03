@@ -1,30 +1,56 @@
 Query(
   Lambda(
-    ["targetTime", "collection", "size", "after", "before"],
+    ["startTime", "collection", "interval", "size", "after", "before"],
     Let(
       {
-        match: Events(Documents(Collection(Var("collection")))),
+        match: Documents(Collection(Var("collection"))),
+        endTime: ToMicros(
+          TimeAdd(
+            Epoch(Var("startTime"), "microseconds"),
+            Var("interval"),
+            "minutes"
+          )
+        ),
         page: If(
           Equals(Var("before"), null),
           If(
             Equals(Var("after"), null),
-            Paginate(Var("match"), { size: Var("size") }),
-            Paginate(Var("match"), { after: Var("after"), size: Var("size") })
+            Paginate(Var("match"), {
+              after: { ts: Var("startTime") },
+              size: Var("size"),
+              events: true
+            }),
+            Paginate(Var("match"), {
+              after: Var("after"),
+              size: Var("size"),
+              events: true
+            })
           ),
-          Paginate(Var("match"), { before: Var("before"), size: Var("size") })
+          Paginate(Var("match"), {
+            before: Var("before"),
+            size: Var("size"),
+            events: true
+          })
         ),
         removeEvents: Filter(
           Var("page"),
           Lambda(
             "e",
             And(
-              LT(Var("targetTime"), Select("ts", Var("e"))),
-              Equals(Select(["action"], Var("e")), "remove")
+              Equals(Select(["action"], Var("e")), "remove"),
+              GT(Var("endTime"), Select("ts", Var("e")))
             )
           )
         )
       },
-      Map(Var("removeEvents"), Lambda("e", Select("document", Var("e"))))
+      Map(
+        Var("removeEvents"),
+        Lambda("e", {
+          ts: Select("ts", Var("e")),
+          doc: Select("document", Var("e")),
+          action: Select("action", Var("e"))
+        })
+      )
     )
   )
 )
