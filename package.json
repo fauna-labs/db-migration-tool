@@ -1,0 +1,14 @@
+{
+  "name": "db-migration-tool",
+  "version": "1.0.0",
+  "main": "main.js",
+  "repository": "git@github.com:fauna-labs/db-migration-tool.git",
+  "author": "Fauna",
+  "license": "MIT",
+  "dependencies": {
+    "faunadb": "^4.8.0"
+  },
+  "scripts": {
+    "migrate": "node main.js"
+  }
+}

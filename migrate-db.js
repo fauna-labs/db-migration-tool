@@ -1,4 +1,4 @@
-import fauna from "faunadb";
+const fauna = require("faunadb");
 
 const {
   Let,
@@ -19,12 +19,12 @@ const {
 } = fauna.query;
 
 //Client for source DB
-var classicClient = new fauna.Client({
-  secret: "src-secret",
+var sourceDbClient = new fauna.Client({
+  secret: "secret",
 });
 //Client for destination DB
-var usClient = new fauna.Client({
-  secret: "dest-secret",
+var destinationDbClient = new fauna.Client({
+  secret: "secret",
 });
 
 async function validateCollection(coll) {
@@ -48,7 +48,7 @@ async function validateCollection(coll) {
     )
   );
 
-  const res = await classicClient
+  const res = await sourceDbClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -70,7 +70,7 @@ async function validateIndex(index) {
     Var("isIndex")
   );
 
-  const res = await classicClient
+  const res = await sourceDbClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -90,7 +90,7 @@ async function validateTargetCollection(coll) {
     )
   );
 
-  const res = await usClient
+  const res = await destinationDbClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -117,7 +117,7 @@ async function applyEvents(e) {
           Create(Var("ref"), { data: Var("doc") })
         )
       );
-      await usClient
+      await destinationDbClient
         .query(createQuery)
         .then((r) => r)
         .catch((err) => console.error("Error: %s", err));
@@ -138,7 +138,7 @@ async function applyEvents(e) {
           "no such document"
         )
       );
-      await usClient
+      await destinationDbClient
         .query(updateQuery)
         .then((r) => r)
         .catch((err) => console.error("Error: %s", err));
@@ -147,6 +147,7 @@ async function applyEvents(e) {
       break;
 
     case "remove":
+    case "delete":
       console.log("Deleting document ", docRef)
       const removeQuery = Let(
         {
@@ -158,7 +159,7 @@ async function applyEvents(e) {
           "Document does not exist or is already deleted"
         )
       );
-      await usClient
+      await destinationDbClient
         .query(removeQuery)
         .then((r) => r)
         .catch((err) => console.error("Error: %s", err));
@@ -199,7 +200,7 @@ async function getRemoveEvents(coll, duration, size, removes) {
       Var("before"),
     ])
   );
-  const res = await classicClient
+  const res = await sourceDbClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -253,7 +254,7 @@ async function getAllEvents(index, duration, size, liveEvents) {
       Var("before"),
     ])
   );
-  const events = await classicClient
+  const events = await sourceDbClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -283,10 +284,14 @@ async function flattenAndSortEvents(docEvents = [], collEvents = []) {
   const flattened = allEvents.flat(Infinity);
   // combine updates and removes and sort them in timestamp order so they are replayed in the exact order
   const sortedEvents = flattened.sort((e1, e2) => e1.ts - e2.ts);
+
+  console.log(`Found ${sortedEvents.length} events`);
+
   sortedEvents.map(async (e) => await applyEvents(e));
 }
 
 async function migrate(coll, index, duration, size) {
+  console.log(`Migrating events from ${new Date(lastProcessed.startTime / 1000).toISOString()} to ${new Date((lastProcessed.startTime + duration * 60 * 1000 * 1000) / 1000).toISOString()}`)
   var liveEvents = [];
   var removes = [];
 
@@ -335,4 +340,4 @@ var lastProcessed = {
   removes: { ref: null, ts: startTime },
 };*/
 
-export { lastProcessed, migrate };
+module.exports = { lastProcessed, migrate };

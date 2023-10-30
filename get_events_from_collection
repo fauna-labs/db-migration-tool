@@ -42,8 +42,8 @@ Query(
               Lambda(
                 "t",
                 And(
-                  LTE(Var("startTime"), Select("ts", Var("t"))),
-                  GT(Var("endTime"), Select("ts", Var("t")))
+                  GTE(Select("ts", Var("t")), Var("startTime")),
+                  LT(Select("ts", Var("t")), Var("endTime"))
                 )
               )
             )
@@ -61,7 +61,7 @@ Query(
               ts: Select("ts", Var("event")),
               doc: Select("document", Var("event")),
               action: Select("action", Var("event")),
-              data: Select("data", Var("event"))
+              data: Select("data", Var("event"), null)
             })
           )
         )
