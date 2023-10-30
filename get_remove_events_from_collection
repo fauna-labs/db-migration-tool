@@ -38,7 +38,8 @@ Query(
             "e",
             And(
               Equals(Select(["action"], Var("e")), "remove"),
-              GT(Var("endTime"), Select("ts", Var("e")))
+              GTE(Select("ts", Var("e")), Var("startTime")),
+              LT(Select("ts", Var("e")), Var("endTime"))
             )
           )
         )
