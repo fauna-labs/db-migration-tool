@@ -18,12 +18,20 @@ async function pause(ms) {
   .usage('[OPTIONS]...')
   .requiredOption('-s, --source <string>', 'access secret for the source DB')
   .requiredOption('-t, --target <string>', 'access secret for the target DB')
+  .requiredOption('-c, --collection <string>', 'the name of the collection to be sync\'ed')
   .parse(process.argv);
 
-  var startTime = Date.parse("2023-10-27T23:06:18Z") * 1000;
-  var coll = "collectioName"; //collection name
-  var index = "indexName"; //index name
-  var duration = 30; //fetch events for the time duration in minutes
+  
+const options = program.opts();
+/*
+if (options.debug) console.log(options);
+console.log('key details:');
+if (options.source) console.log(`- ${options.source}`);
+*/
+
+var startTime = Date.parse("2023-09-24T05:28:57Z") * 1000;
+var index = "Book_Events"; //index name
+var duration = 30; //fetch events for the time duration in minutes
 
   var size = 64; //page size
 
@@ -35,7 +43,7 @@ async function pause(ms) {
   lastProcessed.updates.ts = startTime;
   lastProcessed.removes.ts = startTime;
 
-  let res = await migrate(coll, index, duration, size, program.source, program.target );
+const res = await migrate(options.collection, index, duration, size, options.source, options.target );
 
   while (
     res &&
@@ -50,7 +58,7 @@ async function pause(ms) {
 
     iterations--;
 
-    res = await migrate(coll, index, duration, size, program.source, program.target );
+    res = await migrate(options.collection, index, duration, size, options.source, options.target );
   }
 
   if (!res) {

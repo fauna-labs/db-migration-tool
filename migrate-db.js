@@ -297,8 +297,9 @@ async function migrate(coll, index, duration, size, sourceKey, targetKey) {
   var liveEvents = [];
   var removes = [];
 
+  console.log( sourceKey);
   sourceClient = new fauna.Client({
-    secret: sourceKey,
+    secret: 'fnAFRoDfmkACRFXHlhx5xj_wUDratlx-89Fao5BO',
   });
 
   targetClient = new fauna.Client({
