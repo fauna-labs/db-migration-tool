@@ -19,7 +19,7 @@ Steps:
 2. Create a database(B) in the target RG from the latest available snapshot of the database A.
 3. Generate admin key for database B
 4. Run the script in `main.js`
-   - Specify the timestamp, collection name, index name, desired duration in `main.js`
-   - Specify the correct secret for each database in the client configuration in `migrate-db.js`
+   - The script takes three required arguments: the access secret for the source database, the access secret for the target database, and the name of the collection you want to sync
+   - Specify the timestamp, and desired duration in main.js
      
 Note: Any new schema documents (collections, indexes) created after the snapshot was copied will not be migrated.
