@@ -15,12 +15,11 @@ If it doesn't already exist, an index of the following shape will be created:
 
 ## Steps
 
-1. Create the UDFs `get_events_from_collection` and `get_remove_events_from_collection` in the source database(A)
-2. Create a database(B) in the target RG from the latest available snapshot of the database A.
-3. Generate admin key for database B
-4. Run the script in `main.js`
-   - Specify the timestamp, collection name, index name, desired duration in `main.js`
-   - Specify the correct secret for each database in the client configuration in `migrate-db.js`
+1. Create a database (B) in the target RG from the latest available snapshot of the source database (A).
+2. Generate admin key for database B.
+3. Run the script in `main.js`:
+   - Specify the timestamp, collection name, index name, desired duration in `main.js`.
+   - Specify the correct secret for each database in the client configuration in `migrate-db.js`.
      
 
 ## Limitations
