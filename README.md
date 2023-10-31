@@ -4,13 +4,13 @@ This tool can be used to migrate a database from one RG to a different RG.
 It uses Fauna's temporality feature to capture all events for each collection in a database that occurred after a given timestamp, and plays them back in the same order on the destination RG.
 The tool works in combination with the Copy feature. By itself, it does not copy over or migrate indexes or keys.
 It works on each collection in a database.
+If it doesn't already exist, an index of the following shape will be created:
+  `{ name: "<index-name>", source: Collection("<collection-name>"), terms: [], values: [ { field: "ts" }, { field: "ref" } ] }`
 
 Pre-requisites
 
 - Take a snapshot of the source database
 - Enable history_days on all collections that need to be migrated
-- Create an Index on each collection that needs to be migrated with the following definition
-  `{ name: "<index-name>", source: Collection("<collection-name>"), terms: [], values: [ { field: "ts" }, { field: "ref" } ] }`
 - This index needs to be active before the data can be migrated
 
 Steps:

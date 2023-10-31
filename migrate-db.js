@@ -16,6 +16,7 @@ const {
   Collection,
   Select,
   LT,
+  CreateIndex,
 } = fauna.query;
 
 //Client for source DB
@@ -56,18 +57,23 @@ async function validateCollection(coll) {
   return res;
 }
 
-async function validateIndex(index) {
+async function ensureIndex(index, collection) {
   const qry = Let(
     {
       index: index,
-      isIndex: If(
-        Exists(Index(Var("index"))),
-        true,
-        "Please make sure the index exists"
-      ),
+      collection: collection,
     },
-
-    Var("isIndex")
+    If(Exists(Index(Var("index"))),
+      true,
+      CreateIndex({
+        name: Var("index"),
+        source: Collection(Var("collection")),
+        values: [
+          { field: ['ts'] },
+          { field: ['ref'] }
+       ]
+      })
+    )
   );
 
   const res = await sourceDbClient
@@ -302,12 +308,8 @@ async function migrate(coll, index, duration, size) {
     return false;
   }
 
-  //validate that the required index is present on the source collection
-  const valIndex = await validateIndex(index);
-  if (typeof valIndex == "string") {
-    console.log(valIndex);
-    return false;
-  }
+  //verify that the index exists, and if not then create it
+  const valIndex = await ensureIndex(index, coll);
 
   //validate that the collection exists on destination db
   const valTargetColl = await validateTargetCollection(coll);
