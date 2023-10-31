@@ -1,5 +1,6 @@
 const { migrate } = require("./migrate-db.js");
 const { lastProcessed } = require("./migrate-db.js");
+const { program } = require("commander");
 
 async function pause(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -10,6 +11,14 @@ async function pause(ms) {
   // Number of iterations are configurable
   // With duration=30 and iteration=10, it migrates  30 mins worth of data from source db and does this 10 times, 
   // waiting 2 mins (interval=120) between each fetch 
+  program
+  .name("fauna-db-sync")
+  .description('migrates lastest writes from one DB to another')
+  .version('0.0.0', '-v, --version')
+  .usage('[OPTIONS]...')
+  .requiredOption('-s, --source <string>', 'access secret for the source DB')
+  .requiredOption('-t, --target <string>', 'access secret for the target DB')
+  .parse(process.argv);
 
   var startTime = Date.parse("2023-10-27T23:06:18Z") * 1000;
   var coll = "collectioName"; //collection name
@@ -26,7 +35,7 @@ async function pause(ms) {
   lastProcessed.updates.ts = startTime;
   lastProcessed.removes.ts = startTime;
 
-  let res = await migrate(coll, index, duration, size);
+  let res = await migrate(coll, index, duration, size, program.source, program.target );
 
   while (
     res &&
@@ -41,7 +50,7 @@ async function pause(ms) {
 
     iterations--;
 
-    res = await migrate(coll, index, duration, size);
+    res = await migrate(coll, index, duration, size, program.source, program.target );
   }
 
   if (!res) {
