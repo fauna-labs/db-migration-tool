@@ -54,7 +54,10 @@ async function validateCollection(coll) {
   const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
-    .catch((err) => console.error("Error: %s", err));
+    .catch((err) => {
+      console.error("validateCollection error: %s", err);
+      throw err;
+    });
 
   return res;
 }
@@ -81,7 +84,10 @@ async function ensureIndex(index, collection) {
   const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
-    .catch((err) => console.error("Error: %s", err));
+    .catch((err) => {
+      console.error("ensureIndex error: %s", err);
+      throw err;
+    });
 
   return res;
 }
@@ -89,10 +95,13 @@ async function ensureIndex(index, collection) {
 async function ensureGetEventsFromCollection() {
   const qry = getEventsFromCollectionFunctionQuery(get_events_from_collection)
 
-  const res = await sourceDbClient
+  const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
-    .catch((err) => console.error("Error: %s", err));
+    .catch((err) => {
+      console.error("ensureGetEventsFromCollection error: %s", err);
+      throw err;
+    });
 
   return res;
 }
@@ -100,10 +109,13 @@ async function ensureGetEventsFromCollection() {
 async function ensureGetRemoveEventsFromCollection() {
   const qry = getRemoveEventsFromCollectionFunctionQuery(get_remove_events_from_collection)
 
-  const res = await sourceDbClient
+  const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
-    .catch((err) => console.error("Error: %s", err));
+    .catch((err) => {
+      console.error("ensureGetRemoveEventsFromCollection error: %s", err);
+      throw err;
+    });
 
   return res;
 }
@@ -123,7 +135,10 @@ async function validateTargetCollection(coll) {
   const res = await targetClient
     .query(qry)
     .then((ret) => ret)
-    .catch((err) => console.error("Error: %s", err));
+    .catch((err) => {
+      console.error("validateTargetCollection error: %s", err);
+      throw err;
+    });
 
   return res;
 }
@@ -135,7 +150,7 @@ async function applyEvents(e) {
  
   switch (e.action) {
     case "create":
-      console.log("Creating document ", docRef)
+      console.log(`Creating document: ${docRef} at ${docTs}`);
       const createQuery = Let(
         {
           ref: docRef,
@@ -150,13 +165,14 @@ async function applyEvents(e) {
       await targetClient
         .query(createQuery)
         .then((r) => r)
-        .catch((err) => console.error("Error: %s", err));
-      //lastMigrated.updates.ref = docRef;
-      //lastMigrated.updates.ts = docTs;
+        .catch((err) => {
+          console.error("'create' event error: %s", err);
+          throw err;
+        });
       break;
 
     case "update":
-      console.log("Updating document ", docRef);
+      console.log(`Updating document: ${docRef} at ${docTs}`);
       const updateQuery = Let(
         {
           ref: docRef,
@@ -171,14 +187,15 @@ async function applyEvents(e) {
       await targetClient
         .query(updateQuery)
         .then((r) => r)
-        .catch((err) => console.error("Error: %s", err));
-      //lastMigrated.updates.ref = docRef;
-      //lastMigrated.updates.ts = docTs;
+        .catch((err) => {
+          console.error("'update' event error: %s", err);
+          throw err;
+        });
       break;
 
     case "remove":
     case "delete":
-      console.log("Deleting document ", docRef)
+      console.log(`Deleting document: ${docRef} at ${docTs}`);
       const removeQuery = Let(
         {
           ref: docRef,
@@ -192,13 +209,14 @@ async function applyEvents(e) {
       await targetClient
         .query(removeQuery)
         .then((r) => r)
-        .catch((err) => console.error("Error: %s", err));
-      //lastMigrated.removes.ref = docRef;
-      //lastMigrated.removes.ts = docTs;
+        .catch((err) => {
+          console.error("'delete' event error: %s", err);
+          throw err;
+        });
       break;
 
     default:
-      console.log("Something isn't right, check your inputs");
+      throw `'${e.action}' is not a recognized Event action`;
   }
 }
 
@@ -234,7 +252,10 @@ async function getRemoveEvents(coll, duration, size, removes) {
   const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
-    .catch((err) => console.error("Error: %s", err));
+    .catch((err) => {
+      console.error("getRemoveEvents error: %s", err);
+      throw err;
+    });
 
   const len = res.data.length;
 
@@ -289,7 +310,10 @@ async function getAllEvents(index, duration, size, liveEvents) {
   const events = await sourceClient
     .query(qry)
     .then((ret) => ret)
-    .catch((err) => console.error("Error: %s", err));
+    .catch((err) => {
+      console.error("getAllEvents error: %s", err);
+      throw err;
+    });
 
   var length = events.data.length;
 
@@ -319,7 +343,9 @@ async function flattenAndSortEvents(docEvents = [], collEvents = []) {
 
   console.log(`Found ${sortedEvents.length} events`);
 
-  sortedEvents.map(async (e) => await applyEvents(e));
+  for (const evt of sortedEvents) {
+    await applyEvents(evt);
+  }
 }
 
 async function migrate(coll, index, duration, size, sourceKey, targetKey) {
@@ -355,11 +381,15 @@ async function migrate(coll, index, duration, size, sourceKey, targetKey) {
 
   var docEvents = await getAllEvents(index, duration, size, liveEvents)
     .then((ev) => ev)
-    .catch((e) => console.log(e));
+    .catch((e) => {
+      throw e;
+    });
 
   var collEvents = await getRemoveEvents(coll, duration, size, removes)
     .then((ev) => ev)
-    .catch((e) => console.log(e));
+    .catch((e) => {
+      throw e;
+    });
 
   await flattenAndSortEvents(docEvents, collEvents);
 
