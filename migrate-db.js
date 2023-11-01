@@ -89,7 +89,7 @@ async function ensureIndex(index, collection) {
 async function ensureGetEventsFromCollection() {
   const qry = getEventsFromCollectionFunctionQuery(get_events_from_collection)
 
-  const res = await sourceDbClient
+  const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -100,7 +100,7 @@ async function ensureGetEventsFromCollection() {
 async function ensureGetRemoveEventsFromCollection() {
   const qry = getRemoveEventsFromCollectionFunctionQuery(get_remove_events_from_collection)
 
-  const res = await sourceDbClient
+  const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -319,7 +319,9 @@ async function flattenAndSortEvents(docEvents = [], collEvents = []) {
 
   console.log(`Found ${sortedEvents.length} events`);
 
-  sortedEvents.map(async (e) => await applyEvents(e));
+  for (const evt of sortedEvents) {
+    await applyEvents(evt);
+  }
 }
 
 async function migrate(coll, index, duration, size, sourceKey, targetKey) {

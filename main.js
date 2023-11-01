@@ -22,16 +22,16 @@ async function pause(ms) {
   .parse(process.argv);
 
   
-const options = program.opts();
-/*
-if (options.debug) console.log(options);
-console.log('key details:');
-if (options.source) console.log(`- ${options.source}`);
-*/
+  const options = program.opts();
+  /*
+  if (options.debug) console.log(options);
+  console.log('key details:');
+  if (options.source) console.log(`- ${options.source}`);
+  */
 
-var startTime = Date.parse("2023-09-24T05:28:57Z") * 1000;
-var index = "Book_Events"; //index name
-var duration = 30; //fetch events for the time duration in minutes
+  var startTime = Date.parse("2023-09-24T05:28:57Z") * 1000;
+  var index = "Book_Events"; //index name
+  var duration = 30; //fetch events for the time duration in minutes
 
   var size = 64; //page size
 
@@ -43,7 +43,7 @@ var duration = 30; //fetch events for the time duration in minutes
   lastProcessed.updates.ts = startTime;
   lastProcessed.removes.ts = startTime;
 
-const res = await migrate(options.collection, index, duration, size, options.source, options.target );
+  let res = await migrate(options.collection, index, duration, size, options.source, options.target );
 
   while (
     res &&
