@@ -1,12 +1,14 @@
 const fauna = require("faunadb");
+const {
+  getEventsFromCollectionFunctionQuery,
+  getRemoveEventsFromCollectionFunctionQuery
+} = require("./functions.js");
 
 const {
   Let,
   Get,
   Var,
   Index,
-  ToMicros,
-  Time,
   Call,
   Exists,
   If,
@@ -24,6 +26,9 @@ var sourceClient;
 
 //Client for destination DB
 var targetClient;
+
+var get_events_from_collection = "_get_events_from_collection"
+var get_remove_events_from_collection = "_get_remove_events_from_collection"
 
 async function validateCollection(coll) {
   const qry = Let(
@@ -74,6 +79,28 @@ async function ensureIndex(index, collection) {
   );
 
   const res = await sourceClient
+    .query(qry)
+    .then((ret) => ret)
+    .catch((err) => console.error("Error: %s", err));
+
+  return res;
+}
+
+async function ensureGetEventsFromCollection() {
+  const qry = getEventsFromCollectionFunctionQuery(get_events_from_collection)
+
+  const res = await sourceDbClient
+    .query(qry)
+    .then((ret) => ret)
+    .catch((err) => console.error("Error: %s", err));
+
+  return res;
+}
+
+async function ensureGetRemoveEventsFromCollection() {
+  const qry = getRemoveEventsFromCollectionFunctionQuery(get_remove_events_from_collection)
+
+  const res = await sourceDbClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -193,8 +220,9 @@ async function getRemoveEvents(coll, duration, size, removes) {
       size: size,
       before: before,
       after: after,
+      get_remove_events_from_collection: get_remove_events_from_collection
     },
-    Call("get_remove_events_from_collection", [
+    Call(Var("get_remove_events_from_collection"), [
       Var("ts"),
       Var("coll"),
       Var("duration"),
@@ -247,8 +275,9 @@ async function getAllEvents(index, duration, size, liveEvents) {
       size: size,
       before: before,
       after: after,
+      get_events_from_collection: get_events_from_collection,
     },
-    Call("get_events_from_collection", [
+    Call(Var("get_events_from_collection"), [
       Var("startTime"),
       Var("index"),
       Var("duration"),
@@ -312,8 +341,10 @@ async function migrate(coll, index, duration, size, sourceKey, targetKey) {
     return false;
   }
 
-  //verify that the index exists, and if not then create it
-  const valIndex = await ensureIndex(index, coll);
+  //verify that the index and functions exist, and if not then create them
+  await ensureIndex(index, coll);
+  await ensureGetEventsFromCollection();
+  await ensureGetRemoveEventsFromCollection();
 
   //validate that the collection exists on destination db
   const valTargetColl = await validateTargetCollection(coll);
