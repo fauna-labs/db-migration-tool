@@ -22,13 +22,10 @@ const {
 } = fauna.query;
 
 //Client for source DB
-var sourceDbClient = new fauna.Client({
-  secret: "secret",
-});
+var sourceClient;
+
 //Client for destination DB
-var destinationDbClient = new fauna.Client({
-  secret: "secret",
-});
+var targetClient;
 
 var get_events_from_collection = "_get_events_from_collection"
 var get_remove_events_from_collection = "_get_remove_events_from_collection"
@@ -54,7 +51,7 @@ async function validateCollection(coll) {
     )
   );
 
-  const res = await sourceDbClient
+  const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -81,7 +78,7 @@ async function ensureIndex(index, collection) {
     )
   );
 
-  const res = await sourceDbClient
+  const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -123,7 +120,7 @@ async function validateTargetCollection(coll) {
     )
   );
 
-  const res = await destinationDbClient
+  const res = await targetClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -150,7 +147,7 @@ async function applyEvents(e) {
           Create(Var("ref"), { data: Var("doc") })
         )
       );
-      await destinationDbClient
+      await targetClient
         .query(createQuery)
         .then((r) => r)
         .catch((err) => console.error("Error: %s", err));
@@ -171,7 +168,7 @@ async function applyEvents(e) {
           "no such document"
         )
       );
-      await destinationDbClient
+      await targetClient
         .query(updateQuery)
         .then((r) => r)
         .catch((err) => console.error("Error: %s", err));
@@ -192,7 +189,7 @@ async function applyEvents(e) {
           "Document does not exist or is already deleted"
         )
       );
-      await destinationDbClient
+      await targetClient
         .query(removeQuery)
         .then((r) => r)
         .catch((err) => console.error("Error: %s", err));
@@ -234,7 +231,7 @@ async function getRemoveEvents(coll, duration, size, removes) {
       Var("before"),
     ])
   );
-  const res = await sourceDbClient
+  const res = await sourceClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -289,7 +286,7 @@ async function getAllEvents(index, duration, size, liveEvents) {
       Var("before"),
     ])
   );
-  const events = await sourceDbClient
+  const events = await sourceClient
     .query(qry)
     .then((ret) => ret)
     .catch((err) => console.error("Error: %s", err));
@@ -325,10 +322,17 @@ async function flattenAndSortEvents(docEvents = [], collEvents = []) {
   sortedEvents.map(async (e) => await applyEvents(e));
 }
 
-async function migrate(coll, index, duration, size) {
-  console.log(`Migrating events from ${new Date(lastProcessed.startTime / 1000).toISOString()} to ${new Date((lastProcessed.startTime + duration * 60 * 1000 * 1000) / 1000).toISOString()}`)
+async function migrate(coll, index, duration, size, sourceKey, targetKey) {
   var liveEvents = [];
   var removes = [];
+
+  sourceClient = new fauna.Client({
+    secret: sourceKey,
+  });
+
+  targetClient = new fauna.Client({
+    secret: targetKey,
+  });
 
   //validate that the given collection exists and that history_days is set
   const valColl = await validateCollection(coll);

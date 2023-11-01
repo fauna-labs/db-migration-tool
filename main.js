@@ -1,5 +1,6 @@
 const { migrate } = require("./migrate-db.js");
 const { lastProcessed } = require("./migrate-db.js");
+const { program } = require("commander");
 
 async function pause(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -10,11 +11,27 @@ async function pause(ms) {
   // Number of iterations are configurable
   // With duration=30 and iteration=10, it migrates  30 mins worth of data from source db and does this 10 times, 
   // waiting 2 mins (interval=120) between each fetch 
+  program
+  .name("fauna-db-sync")
+  .description('migrates lastest writes from one DB to another')
+  .version('0.0.0', '-v, --version')
+  .usage('[OPTIONS]...')
+  .requiredOption('-s, --source <string>', 'access secret for the source DB')
+  .requiredOption('-t, --target <string>', 'access secret for the target DB')
+  .requiredOption('-c, --collection <string>', 'the name of the collection to be sync\'ed')
+  .parse(process.argv);
 
-  var startTime = Date.parse("2023-10-27T23:06:18Z") * 1000;
-  var coll = "collectioName"; //collection name
-  var index = "indexName"; //index name
-  var duration = 30; //fetch events for the time duration in minutes
+  
+const options = program.opts();
+/*
+if (options.debug) console.log(options);
+console.log('key details:');
+if (options.source) console.log(`- ${options.source}`);
+*/
+
+var startTime = Date.parse("2023-09-24T05:28:57Z") * 1000;
+var index = "Book_Events"; //index name
+var duration = 30; //fetch events for the time duration in minutes
 
   var size = 64; //page size
 
@@ -26,7 +43,7 @@ async function pause(ms) {
   lastProcessed.updates.ts = startTime;
   lastProcessed.removes.ts = startTime;
 
-  let res = await migrate(coll, index, duration, size);
+const res = await migrate(options.collection, index, duration, size, options.source, options.target );
 
   while (
     res &&
@@ -41,7 +58,7 @@ async function pause(ms) {
 
     iterations--;
 
-    res = await migrate(coll, index, duration, size);
+    res = await migrate(options.collection, index, duration, size, options.source, options.target );
   }
 
   if (!res) {
