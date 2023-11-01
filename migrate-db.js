@@ -150,7 +150,7 @@ async function applyEvents(e) {
  
   switch (e.action) {
     case "create":
-      console.log("Creating document ", docRef)
+      console.log(`Creating document: ${docRef} at ${docTs}`);
       const createQuery = Let(
         {
           ref: docRef,
@@ -172,7 +172,7 @@ async function applyEvents(e) {
       break;
 
     case "update":
-      console.log("Updating document ", docRef);
+      console.log(`Updating document: ${docRef} at ${docTs}`);
       const updateQuery = Let(
         {
           ref: docRef,
@@ -195,7 +195,7 @@ async function applyEvents(e) {
 
     case "remove":
     case "delete":
-      console.log("Deleting document ", docRef)
+      console.log(`Deleting document: ${docRef} at ${docTs}`);
       const removeQuery = Let(
         {
           ref: docRef,
@@ -216,7 +216,7 @@ async function applyEvents(e) {
       break;
 
     default:
-      throw `'${e.action}' is not a recognized Event type`;
+      throw `'${e.action}' is not a recognized Event action`;
   }
 }
 
