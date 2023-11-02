@@ -24,6 +24,10 @@ Options:
   -h, --help                 display help for command
 ```
 
+Example
+```$ node main.js --source $SOURCE_KEY --target $TARGET_KEY -c Customer -d 1698884566000```
+
+
 ### Best Practices
 - To avoid gaps in synchronization, you should usea start timestamp less than the timestamp of the last synced wriet on the target collection.
 - To reduce the overall time to sync an entire database, run one instance of this tool for each collection, in parallel
