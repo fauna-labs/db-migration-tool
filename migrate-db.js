@@ -63,33 +63,55 @@ async function validateCollection(coll) {
 }
 
 async function ensureIndex(index, collection) {
-  const qry = Let(
+  const check_index_query = Let(
     {
       index: index,
       collection: collection,
     },
     If(Exists(Index(Var("index"))),
       true,
+      // Doesn't exist, create it.
       CreateIndex({
         name: Var("index"),
         source: Collection(Var("collection")),
         values: [
           { field: ['ts'] },
           { field: ['ref'] }
-       ]
+        ]
       })
     )
   );
 
-  const res = await sourceClient
-    .query(qry)
+  // Returns true or an exception.
+  await sourceClient
+    .query(check_index_query)
     .then((ret) => ret)
     .catch((err) => {
       console.error("ensureIndex error: %s", err);
       throw err;
     });
 
-  return res;
+  const check_active_query = Let(
+    {
+      index: index,
+      collection: collection,
+    },
+    // If it exists, check if it's active.
+    Let({
+      is_active: Select('active', Get(Index(Var("index"))))
+    },
+      Var("is_active")
+    )
+
+  );
+
+  return await sourceClient
+    .query(check_active_query)
+    .then((ret) => ret)
+    .catch((err) => {
+      console.error("ensureIndex error: %s", err);
+      throw err;
+    });
 }
 
 async function ensureGetEventsFromCollection() {
@@ -368,7 +390,13 @@ async function migrate(coll, index, duration, size, sourceKey, targetKey) {
   }
 
   //verify that the index and functions exist, and if not then create them
-  await ensureIndex(index, coll);
+  var indexActive = await ensureIndex(index, coll);
+  //only continue if the index is active
+  if (!indexActive) {
+    console.log("Index " + index + " is not active, retry later.");
+    return false;
+  }
+
   await ensureGetEventsFromCollection();
   await ensureGetRemoveEventsFromCollection();
 
