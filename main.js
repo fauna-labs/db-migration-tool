@@ -43,6 +43,7 @@ function parseParallelism(value, dummyPrevious) {
   .requiredOption('-d, --timestamp <string>', 'the transtamp from which to start syncing')
   .parse(process.argv);
   
+  const options = program.opts();
 
   var index = options.index ?? "_migration_index_for_" + options.collection;
 
