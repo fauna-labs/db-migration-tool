@@ -1,10 +1,29 @@
 const { migrate } = require("./migrate-db.js");
 const { lastProcessed } = require("./migrate-db.js");
-const { program } = require("commander");
+const { program, InvalidArgumentError } = require("commander");
 
 async function pause(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+function parseParallelism(value, dummyPrevious) {
+  let parsedValue = parseInt(value, 10);
+
+  if (isNaN(parsedValue)) {
+    throw new InvalidArgumentError("Invalid 'parallelism' arg; please pass an integer from 1 to 10");
+  }
+
+  if (parsedValue > 10) {
+    console.warn("Parallelism set to a max of 10");
+    parsedValue = 10;
+  } else if (parsedValue < 1) {
+    console.warn("Parallelism set to a min of 1");
+    parsedValue = 1;
+  }
+
+  return parsedValue;
+}
+
 (async () => {
   // Start the program - first time
   // Provide the startTime, collection, index and how many minutes of writes the destination db needs to catch up each time. 
@@ -19,7 +38,8 @@ async function pause(ms) {
   .requiredOption('-s, --source <string>', 'access secret for the source DB')
   .requiredOption('-t, --target <string>', 'access secret for the target DB')
   .requiredOption('-c, --collection <string>', 'the name of the collection to be sync\'ed')
-  .option('-i, --index <string>', 'the name of the index to use to sync the collection\'ed')
+  .option('-i, --index <string>', 'the name of the index to use to sync the collection')
+  .option('-p, --parallelism <number>', 'apply up to N events per transaction', parseParallelism, 10)
   .parse(process.argv);
 
   
@@ -30,9 +50,9 @@ async function pause(ms) {
   if (options.source) console.log(`- ${options.source}`);
   */
 
-  var index = options.index ? options.index : "_migration_index_for_" + options.collection;
+  var index = options.index ?? "_migration_index_for_" + options.collection;
 
-  var startTime = Date.parse("2023-09-24T05:28:57Z") * 1000;
+  var startTime = Date.parse("2023-11-02T05:00:00Z") * 1000;
   var duration = 30; //fetch events for the time duration in minutes
 
   var size = 64; //page size
@@ -45,7 +65,7 @@ async function pause(ms) {
   lastProcessed.updates.ts = startTime;
   lastProcessed.removes.ts = startTime;
 
-  let res = await migrate(options.collection, index, duration, size, options.source, options.target );
+  let res = await migrate(options.collection, index, duration, size, options.source, options.target, options.parallelism);
 
   while (
     res &&
@@ -60,7 +80,7 @@ async function pause(ms) {
 
     iterations--;
 
-    res = await migrate(options.collection, index, duration, size, options.source, options.target );
+    res = await migrate(options.collection, index, duration, size, options.source, options.target, options.parallelism);
   }
 
   if (!res) {
