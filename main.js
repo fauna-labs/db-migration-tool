@@ -40,6 +40,7 @@ function parseParallelism(value, dummyPrevious) {
   .requiredOption('-c, --collection <string>', 'the name of the collection to be sync\'ed')
   .option('-i, --index <string>', 'the name of the index to use to sync the collection')
   .option('-p, --parallelism <number>', 'apply up to N events per transaction', parseParallelism, 10)
+  .requiredOption('-d, --timestamp <string>', 'the transtamp from which to start syncing')
   .parse(process.argv);
 
   
@@ -61,9 +62,9 @@ function parseParallelism(value, dummyPrevious) {
 
   var iterations = 20; // Define the total number of iterations
 
-  lastProcessed.startTime = startTime;
-  lastProcessed.updates.ts = startTime;
-  lastProcessed.removes.ts = startTime;
+  lastProcessed.startTime = options.timestamp;
+  lastProcessed.updates.ts = options.timestamp;
+  lastProcessed.removes.ts = options.timestamp;
 
   let res = await migrate(options.collection, index, duration, size, options.source, options.target, options.parallelism);
 

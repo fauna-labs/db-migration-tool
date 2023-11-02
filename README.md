@@ -19,8 +19,11 @@ If it doesn't already exist, an index of the following shape will be created:
 2. Create a database(B) in the target RG from the latest available snapshot of the database A.
 3. Generate admin key for database B
 4. Run the script in `main.js`
-   - The script takes three required arguments: the access secret for the source database, the access secret for the target database, and the name of the collection you want to sync
-   - Specify the timestamp, and desired duration in main.js
+   - The script takes four required arguments: 
+   -- the access secret for the source database, 
+   -- the access secret for the target database, 
+   -- the name of the collection you want to sync
+   -- and the transaction timestamp at which the sync is to run from  
 
 ## Limitations
 
