@@ -19,6 +19,7 @@ const {
   Select,
   LT,
   CreateIndex,
+  Do,
 } = fauna.query;
 
 //Client for source DB
@@ -165,7 +166,7 @@ async function validateTargetCollection(coll) {
   return res;
 }
 
-async function applyEvents(e) {
+function getApplyEventQuery(e) {
   const docRef = e.doc;
   const docTs = e.ts;
   const docData = e.data;
@@ -173,7 +174,7 @@ async function applyEvents(e) {
   switch (e.action) {
     case "create":
       console.log(`Creating document: ${docRef} at ${docTs}`);
-      const createQuery = Let(
+      return Let(
         {
           ref: docRef,
           doc: docData,
@@ -184,18 +185,10 @@ async function applyEvents(e) {
           Create(Var("ref"), { data: Var("doc") })
         )
       );
-      await targetClient
-        .query(createQuery)
-        .then((r) => r)
-        .catch((err) => {
-          console.error("'create' event error: %s", err);
-          throw err;
-        });
-      break;
 
     case "update":
       console.log(`Updating document: ${docRef} at ${docTs}`);
-      const updateQuery = Let(
+      return Let(
         {
           ref: docRef,
           doc: docData,
@@ -206,19 +199,11 @@ async function applyEvents(e) {
           "no such document"
         )
       );
-      await targetClient
-        .query(updateQuery)
-        .then((r) => r)
-        .catch((err) => {
-          console.error("'update' event error: %s", err);
-          throw err;
-        });
-      break;
 
     case "remove":
     case "delete":
       console.log(`Deleting document: ${docRef} at ${docTs}`);
-      const removeQuery = Let(
+      return Let(
         {
           ref: docRef,
         },
@@ -228,14 +213,6 @@ async function applyEvents(e) {
           "Document does not exist or is already deleted"
         )
       );
-      await targetClient
-        .query(removeQuery)
-        .then((r) => r)
-        .catch((err) => {
-          console.error("'delete' event error: %s", err);
-          throw err;
-        });
-      break;
 
     default:
       throw `'${e.action}' is not a recognized Event action`;
@@ -357,7 +334,7 @@ async function getAllEvents(index, duration, size, liveEvents) {
   }
 }
 
-async function flattenAndSortEvents(docEvents = [], collEvents = []) {
+async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallelism) {
   var allEvents = docEvents.concat(collEvents);
   const flattened = allEvents.flat(Infinity);
   // combine updates and removes and sort them in timestamp order so they are replayed in the exact order
@@ -365,12 +342,39 @@ async function flattenAndSortEvents(docEvents = [], collEvents = []) {
 
   console.log(`Found ${sortedEvents.length} events`);
 
-  for (const evt of sortedEvents) {
-    await applyEvents(evt);
+  while (sortedEvents.length > 0) {
+    let seenIds = [];
+    let eventQueries = [];
+
+    for (let i = 0; i < maxParallelism && sortedEvents.length > 0; i++) {
+      const evt = sortedEvents[0];
+
+      if (!seenIds.includes(evt.doc.id)) {
+        eventQueries.push(getApplyEventQuery(evt));
+        seenIds.push(evt.doc.id);
+        sortedEvents.shift();
+      } else {
+        break;
+      }
+    }
+
+    if (eventQueries.length > 0) {
+      if (eventQueries.length > 1) {
+        console.log(`Batching ${eventQueries.length} queries`);
+      }
+
+      await targetClient
+        .query(Do(eventQueries))
+        .then((r) => r)
+        .catch((err) => {
+          console.error("Query error: %s", err);
+          throw err;
+        });
+    }
   }
 }
 
-async function migrate(coll, index, duration, size, sourceKey, targetKey) {
+async function migrate(coll, index, duration, size, sourceKey, targetKey, maxParallelism) {
   var liveEvents = [];
   var removes = [];
 
@@ -393,7 +397,7 @@ async function migrate(coll, index, duration, size, sourceKey, targetKey) {
   var indexActive = await ensureIndex(index, coll);
   //only continue if the index is active
   if (!indexActive) {
-    console.log("Index " + index + " is not active, retry later.");
+    console.log(`Index '${index}' is not active, retry later.`);
     return false;
   }
 
@@ -419,7 +423,7 @@ async function migrate(coll, index, duration, size, sourceKey, targetKey) {
       throw e;
     });
 
-  await flattenAndSortEvents(docEvents, collEvents);
+  await flattenAndSortEvents(docEvents, collEvents, maxParallelism);
 
   return true;
 }
