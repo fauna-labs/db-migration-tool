@@ -364,7 +364,7 @@ async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallel
       }
 
       await targetClient
-        .query(Do(eventQueries))
+        .query(Do(...eventQueries, null))
         .then((r) => r)
         .catch((err) => {
           console.error("Query error: %s", err);
