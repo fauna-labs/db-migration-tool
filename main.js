@@ -19,6 +19,7 @@ async function pause(ms) {
   .requiredOption('-s, --source <string>', 'access secret for the source DB')
   .requiredOption('-t, --target <string>', 'access secret for the target DB')
   .requiredOption('-c, --collection <string>', 'the name of the collection to be sync\'ed')
+  .option('-i, --index <string>', 'the name of the index to use to sync the collection\'ed')
   .parse(process.argv);
 
   
@@ -29,8 +30,9 @@ async function pause(ms) {
   if (options.source) console.log(`- ${options.source}`);
   */
 
+  var index = options.index ? options.index : "_migration_index_for_" + options.collection;
+
   var startTime = Date.parse("2023-09-24T05:28:57Z") * 1000;
-  var index = "Book_Events"; //index name
   var duration = 30; //fetch events for the time duration in minutes
 
   var size = 64; //page size
