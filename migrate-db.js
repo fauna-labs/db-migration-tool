@@ -359,9 +359,7 @@ async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallel
     }
 
     if (eventQueries.length > 0) {
-      if (eventQueries.length > 1) {
-        console.log(`Batching ${eventQueries.length} queries`);
-      }
+      console.log(`Applying batch of ${eventQueries.length} event${eventQueries.length == 1 ? "" : "s"}`);
 
       await targetClient
         .query(Do(...eventQueries, null))
