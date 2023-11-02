@@ -38,17 +38,12 @@ function parseParallelism(value, dummyPrevious) {
   .requiredOption('-s, --source <string>', 'access secret for the source DB')
   .requiredOption('-t, --target <string>', 'access secret for the target DB')
   .requiredOption('-c, --collection <string>', 'the name of the collection to be sync\'ed')
+  .requiredOption('-d, --timestamp <string>', 'the timestamp from which to start syncing')
   .option('-i, --index <string>', 'the name of the index to use to sync the collection')
   .option('-p, --parallelism <number>', 'apply up to N events per transaction', parseParallelism, 10)
   .parse(process.argv);
-
   
   const options = program.opts();
-  /*
-  if (options.debug) console.log(options);
-  console.log('key details:');
-  if (options.source) console.log(`- ${options.source}`);
-  */
 
   var index = options.index ?? "_migration_index_for_" + options.collection;
 
@@ -61,9 +56,9 @@ function parseParallelism(value, dummyPrevious) {
 
   var iterations = 20; // Define the total number of iterations
 
-  lastProcessed.startTime = startTime;
-  lastProcessed.updates.ts = startTime;
-  lastProcessed.removes.ts = startTime;
+  lastProcessed.startTime = options.timestamp;
+  lastProcessed.updates.ts = options.timestamp;
+  lastProcessed.removes.ts = options.timestamp;
 
   let res = await migrate(options.collection, index, duration, size, options.source, options.target, options.parallelism);
 
