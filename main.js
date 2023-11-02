@@ -42,14 +42,7 @@ function parseParallelism(value, dummyPrevious) {
   .option('-p, --parallelism <number>', 'apply up to N events per transaction', parseParallelism, 10)
   .requiredOption('-d, --timestamp <string>', 'the transtamp from which to start syncing')
   .parse(process.argv);
-
   
-  const options = program.opts();
-  /*
-  if (options.debug) console.log(options);
-  console.log('key details:');
-  if (options.source) console.log(`- ${options.source}`);
-  */
 
   var index = options.index ?? "_migration_index_for_" + options.collection;
 
