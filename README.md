@@ -29,7 +29,7 @@ Options:
   -s, --source <string>      access secret for the source DB
   -t, --target <string>      access secret for the target DB
   -c, --collection <string>  the name of the collection to be sync'ed
-  -d, --timestamp <string>   the transtamp from which to start syncing
+  -d, --timestamp <string>   the timestamp from which to start syncing
   -h, --help                 display help for command
 ```
 
