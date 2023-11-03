@@ -47,12 +47,10 @@ function parseParallelism(value, dummyPrevious) {
 
   var index = options.index ?? "_migration_index_for_" + options.collection;
 
+  // TUNABLE CONSTANTS
   var duration = 30; //fetch events for the time duration in minutes
-
   var size = 64; //page size
-
   var interval = 30; // time to pause between reading and applying events - in seconds
-
   var iterations = 20; // Define the total number of iterations
 
   lastProcessed.startTime = options.timestamp;

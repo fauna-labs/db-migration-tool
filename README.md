@@ -59,8 +59,8 @@ Options:
   -t, --target <string>       admin secret for the target DB
   -c, --collection <string>   the name of the collection to be sync'ed
   -d, --timestamp <string>    the timestamp from which to start syncing
-  -i, --index <string>        the name of the index to use to sync the collection
-  -p, --parallelism <number>  apply up to N events per transaction (default: 10)
+  -i, --index <string>        [optional] the name of the index to use to sync the collection
+  -p, --parallelism <number>  [optional] apply up to N events per transaction (default: 10)
   -h, --help                  display help for command
 ```
 
@@ -78,6 +78,11 @@ Indexes of the following shape will be created:
   values: [ { field: "ts" }, { field: "ref" } ]
 }
 ```
+
+If you would like to use an existing index, you can specify the index name with the `-i, --index` option. The index must be of the same shape as above.
+
+> [!WARNING]
+> This tool does not verify the index shape before using it. If you specify a custom index, it is your responsibility to ensure that the index is of the correct shape.
 
 ### Converting between ISO time strings and Timestamps
 
@@ -135,6 +140,17 @@ Application cutover is the action of transitioning your application from using t
 4. Update access keys in the application with keys pointing to the target database.
 5. Reenable writes in your application.
 6. Confirm that writes are being applied to the target database.
+
+## Troubleshooting
+
+### "What if I receive a 429 status code?":
+
+429 errors are returned from Fauna when you encounter throughput limits (i.e. your account is being rate-limited). To adjust for this:
+- Reduce parallelism using the `--parallelism` option.
+- Tweak the following constant values in `main.js`:
+    - `duration` - reduce this to narrow the time range for events per iteration
+    - `size` - reduce this to lookup fewer documents at a time
+    - `interval` - increase this to wait longer between iterations so the query limits can "refill"
 
 
 ## Limitations
