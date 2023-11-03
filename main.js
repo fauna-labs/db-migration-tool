@@ -35,25 +35,22 @@ function parseParallelism(value, dummyPrevious) {
   .description('migrates lastest writes from one DB to another')
   .version('0.0.0', '-v, --version')
   .usage('[OPTIONS]...')
-  .requiredOption('-s, --source <string>', 'access secret for the source DB')
-  .requiredOption('-t, --target <string>', 'access secret for the target DB')
+  .requiredOption('-s, --source <string>', 'admin secret for the source DB')
+  .requiredOption('-t, --target <string>', 'admin secret for the target DB')
   .requiredOption('-c, --collection <string>', 'the name of the collection to be sync\'ed')
-  .requiredOption('-d, --timestamp <string>', 'the timestamp from which to start syncing')
-  .option('-i, --index <string>', 'the name of the index to use to sync the collection')
-  .option('-p, --parallelism <number>', 'apply up to N events per transaction', parseParallelism, 10)
+  .requiredOption('-d, --timestamp <number>', 'the timestamp from which to start syncing', parseInt)
+  .option('-i, --index <string>', '[optional] the name of the index to use to sync the collection')
+  .option('-p, --parallelism <number>', '[optional] apply up to N events per transaction', parseParallelism, 10)
   .parse(process.argv);
   
   const options = program.opts();
 
   var index = options.index ?? "_migration_index_for_" + options.collection;
 
-  var startTime = Date.parse("2023-11-02T05:00:00Z") * 1000;
+  // TUNABLE CONSTANTS
   var duration = 30; //fetch events for the time duration in minutes
-
   var size = 64; //page size
-
   var interval = 30; // time to pause between reading and applying events - in seconds
-
   var iterations = 20; // Define the total number of iterations
 
   lastProcessed.startTime = options.timestamp;
