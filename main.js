@@ -38,7 +38,7 @@ function parseParallelism(value, dummyPrevious) {
   .requiredOption('-s, --source <string>', 'admin secret for the source DB')
   .requiredOption('-t, --target <string>', 'admin secret for the target DB')
   .requiredOption('-c, --collection <string>', 'the name of the collection to be sync\'ed')
-  .requiredOption('-d, --timestamp <string>', 'the timestamp from which to start syncing')
+  .requiredOption('-d, --timestamp <number>', 'the timestamp from which to start syncing', parseInt)
   .option('-i, --index <string>', 'the name of the index to use to sync the collection')
   .option('-p, --parallelism <number>', 'apply up to N events per transaction', parseParallelism, 10)
   .parse(process.argv);

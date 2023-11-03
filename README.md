@@ -48,10 +48,10 @@ Open a terminal, navigate to the project directory, and execute the `main.js` fi
 Example:
 ```shell
 $ cd to/my/directory/db-migration-tool
-$ node main.js --source $SOURCE_KEY --target $TARGET_KEY -c Customer -d 1698969600000000
+$ node main.js --source $SOURCE_KEY --target $TARGET_KEY --collection $COLLECTION_NAME --timestamp $START_TIMESTAMP
 ```
 
-CLI Option:
+CLI Options:
 ```
 Options:
   -v, --version               output the version number
@@ -104,7 +104,7 @@ Epoch(1698969600000000, "microseconds") // Time("2023-11-03T00:00:00Z")
 ### 1. Copy your database to the desired Region Group
 
 1. Check that all prerequisites listed earlier in this README have been met.
-2. Create a database copy (target database) in the target RG from the latest available snapshot of source database.
+2. Create a database copy (target database) in the target RG from the latest available snapshot of the source database.
 
 ### 2. Synchronization
 
@@ -113,27 +113,28 @@ Epoch(1698969600000000, "microseconds") // Time("2023-11-03T00:00:00Z")
 
 The script is [idempotent](https://en.wikipedia.org/wiki/Idempotence), so it can safely be run multiple times. We recommend running the script at least once before pausing writes for your application to cutover. This gives you the chance to monitor the time it takes to perform the sync operation and plan ahead.
 
-Monitor the time it takes to perform this update, as this is the theoretical minimum downtime that can be achieved during cutover. You can run this update on a regular basis to get an typical baseline of the time needed to sync the database with the latest writes since the tool was last run.
+Monitor the time it takes to perform this update, as this is the theoretical minimum downtime that can be achieved during cutover. You can run this update on a regular basis to get a typical baseline of the time needed to sync the database with the latest writes since the tool was last run.
 
 1. Generate admin keys for the source database and target database.
-2. Run the script in `main.js`, providing the required authentication keys, the name of the collection to be sync'ed, and the timestamp from which write history is to be applied to the target database.
-   1. The first time you run the script, the timestamp should be a time before the snapshot was taken. This will sync all the writes that occurred after the snapshot was taken.
+2. [Run the script](#running-the-script), providing the required authentication keys, the name of the collection to be synchronized, and the timestamp from which write history is to be applied to the target database.
+   1. The first time you run the script, the timestamp should be a time shortly before the snapshot was taken. This will sync all the writes that occurred after the snapshot was taken.
    2. Subsequent executions of the script can use the timestamp of the last successful execution. This will sync all the writes that occurred since the last successful execution.
-3. Wait for the required indexes to become active. The script will stop if the index is not active and prompt you to try again later. Once the indexes are active, the script will procede to sync the collection data.
+3. Wait for the required indexes to become active. The script will stop if the index is not active and prompt you to try again later. Once the indexes are active, the script will proceed to sync the collection data.
 4. Repeat the operation for all collections in all databases that need to be migrated.
 
 ### 3. Application cutover
 
   > [!IMPORTANT]
-  > It is Recommended that this be scheduled for a window when the downtime least impacts your application workload
+  > It is recommended that this be scheduled for a window when the downtime least impacts your application workload.
 
-Application cutover is the action of transitioning your application from using the source database and reconnecting it to the target database. The strategy for your cutover involves changing the access keys your application uses to connect to the Fauna. Application cutover occurs when you have replaced the keys which connect your application to the source database with keys that connect to the target database.
+Application cutover is the action of transitioning your application from using the source database and reconnecting it to the target database. The strategy for your cutover involves changing the access keys your application uses to connect to Fauna. Application cutover occurs when you have replaced the keys which connect your application to the source database with keys that connect to the target database.
 
 1. Disable writes from the application.
 2. Confirm no new writes are occurring.
 3. Run a final execution of this tool to sync the latest writes to the target database. 
 4. Update access keys in the application with keys pointing to the target database.
-5. Reenable writes in your application
+5. Reenable writes in your application.
+6. Confirm that writes are being applied to the target database.
 
 
 ## Limitations
