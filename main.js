@@ -35,8 +35,8 @@ function parseParallelism(value, dummyPrevious) {
   .description('migrates lastest writes from one DB to another')
   .version('0.0.0', '-v, --version')
   .usage('[OPTIONS]...')
-  .requiredOption('-s, --source <string>', 'access secret for the source DB')
-  .requiredOption('-t, --target <string>', 'access secret for the target DB')
+  .requiredOption('-s, --source <string>', 'admin secret for the source DB')
+  .requiredOption('-t, --target <string>', 'admin secret for the target DB')
   .requiredOption('-c, --collection <string>', 'the name of the collection to be sync\'ed')
   .requiredOption('-d, --timestamp <string>', 'the timestamp from which to start syncing')
   .option('-i, --index <string>', 'the name of the index to use to sync the collection')
@@ -47,7 +47,6 @@ function parseParallelism(value, dummyPrevious) {
 
   var index = options.index ?? "_migration_index_for_" + options.collection;
 
-  var startTime = Date.parse("2023-11-02T05:00:00Z") * 1000;
   var duration = 30; //fetch events for the time duration in minutes
 
   var size = 64; //page size
