@@ -43,7 +43,7 @@ $ git clone https://github.com/fauna-labs/db-migration-tool.git
 
 ### Running the script
 
-Open a terminal, navigate to the project directory, and execute the `main.js` file.
+Open a terminal, navigate to the project directory, and execute the `main.js` file with necessary options.
 
 Example:
 ```shell
@@ -79,9 +79,9 @@ Indexes of the following shape will be created:
 }
 ```
 
-### Converting between time strings and timestamps
+### Converting between ISO time strings and Timestamps
 
-A Fauna Timestamp, an integer representing the microseconds since epoch, is needed to define the start of the synchronization operation (passed in with the `-d, --timestamp` option). You can use Fauna to convert between ISO time strings and Timestamps.
+A Fauna Timestamp, an integer representing the microseconds since the epoch, is needed to define the start of the synchronization operation (passed in with the `-d, --timestamp` option). You can use Fauna to convert between ISO time strings and Timestamps.
 
 String to Timestamp
 ```javascript
@@ -101,32 +101,39 @@ Epoch(1698969600000000, "microseconds") // Time("2023-11-03T00:00:00Z")
 
 ## Process for Migration
 
+### 1. Copy your database to the desired Region Group
+
 1. Check that all prerequisites listed earlier in this README have been met.
 2. Create a database copy (target database) in the target RG from the latest available snapshot of source database.
-3. Generate an admin key for the new, target database.
 
-### Synchronization
+### 2. Synchronization
 
-1. Run the script in `main.js`, providing the required authentication keys, the name of the collection to be sync'ed, and the timestamp from which write history is to be applied to the target database.
-2. Wait for the required indexes to become active. The script will stop if the index is not active and prompt you to try again later. Once the indexes are active, the script will procede to sync the collection data.
-3. Repeat the operation for all collections in all databases that need to be migrated.
+> [!NOTE]
+> If you paused writes to your database before the snapshot time, this script is not needed to because no data needs to be synchronized. You can skip to Application cutover.
 
 The script is [idempotent](https://en.wikipedia.org/wiki/Idempotence), so it can safely be run multiple times. We recommend running the script at least once before pausing writes for your application to cutover. This gives you the chance to monitor the time it takes to perform the sync operation and plan ahead.
 
-Monitor the time it takes to perform this update, as this is the theoretical minimum downtime that can be achieved during cutover. As a Best practice run this update on a regular basis for two reasons:
-   1. Get an typical baseline of the time needed to sync the database with the latest writes since the tool was last run
-   2.  Keeping the target collection frequently sync'ed with the source database gives you flexibility to abort an application cutover
+Monitor the time it takes to perform this update, as this is the theoretical minimum downtime that can be achieved during cutover. You can run this update on a regular basis to get an typical baseline of the time needed to sync the database with the latest writes since the tool was last run.
 
-### Application cutover
+1. Generate admin keys for the source database and target database.
+2. Run the script in `main.js`, providing the required authentication keys, the name of the collection to be sync'ed, and the timestamp from which write history is to be applied to the target database.
+   1. The first time you run the script, the timestamp should be a time before the snapshot was taken. This will sync all the writes that occurred after the snapshot was taken.
+   2. Subsequent executions of the script can use the timestamp of the last successful execution. This will sync all the writes that occurred since the last successful execution.
+3. Wait for the required indexes to become active. The script will stop if the index is not active and prompt you to try again later. Once the indexes are active, the script will procede to sync the collection data.
+4. Repeat the operation for all collections in all databases that need to be migrated.
+
+### 3. Application cutover
 
   > [!IMPORTANT]
   > It is Recommended that this be scheduled for a window when the downtime least impacts your application workload
 
-Application cutover is the action of transitioning your application from using the source database and reconnecting it to the target database. The strategy for your cutover involves changing the access keys your application uses to connect to the Fauna. Application cutover occurs when you have replaced the keys which connect your application to the source database with keys that connect to the target database. The general procedure for application cutover is: 
-1. Disable writes from the application
-2. Confirm no new writes are occurring
-3. Run a final execution of this tool to sync the last of the writes 
-4. Update access keys in the application with keys pointing to the target database
+Application cutover is the action of transitioning your application from using the source database and reconnecting it to the target database. The strategy for your cutover involves changing the access keys your application uses to connect to the Fauna. Application cutover occurs when you have replaced the keys which connect your application to the source database with keys that connect to the target database.
+
+1. Disable writes from the application.
+2. Confirm no new writes are occurring.
+3. Run a final execution of this tool to sync the latest writes to the target database. 
+4. Update access keys in the application with keys pointing to the target database.
+5. Reenable writes in your application
 
 
 ## Limitations
