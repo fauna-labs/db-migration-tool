@@ -1,7 +1,7 @@
 # db-migration-tool
 
 This tool can be used to migrate the data in a given collection from a source database in one Fauna Region Group to another target database, which can be in an entirely different Region Group.
-It uses Fauna's temporality feature to replicate all the write events that occurred after a given timestamp in the source collection, into the same collection of a target database. This tool can be use in combination with [Fauna's Datbase Copy](https://docs.fauna.com/fauna/current/administration/backups#create-a-database-from-a-snapshot) feature to achieve a database migration. By itself, this tool does not copy over or migrate indexes or keys.
+It uses Fauna's temporality feature to replicate all the write events that occurred after a given timestamp in the source collection, into the same collection of a target database. This tool can be use in combination with [Fauna's Database Copy](https://docs.fauna.com/fauna/current/administration/backups#create-a-database-from-a-snapshot) feature to achieve a database migration. By itself, this tool does not copy over or migrate indexes or keys.
 
 The general procedure for migrating from one Region Group to another is to create a backup snapshot of the source database, create a new database from that snapshot on the desired Region Group. Once the database copy is complete, use this tool to synchronize the writes that have occurred on the sources database since the snapshot was taken. More guidance regarding migration is included at the end of this README.
 
