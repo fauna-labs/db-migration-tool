@@ -187,6 +187,10 @@ function getApplyEventQuery(e) {
       );
 
     case "update":
+      if (docData == null) {
+        console.log(`Update event for ${docRef} at ${docTs} has null data, skipping`);
+        return null;
+      }
       console.log(`Updating document: ${docRef} at ${docTs}`);
       return Let(
         {
@@ -350,8 +354,13 @@ async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallel
       const evt = sortedEvents[0];
 
       if (!seenIds.includes(evt.doc.id)) {
-        eventQueries.push(getApplyEventQuery(evt));
-        seenIds.push(evt.doc.id);
+        const eventQuery = getApplyEventQuery(evt);
+
+        if (eventQuery) {
+          eventQueries.push(eventQuery);
+          seenIds.push(evt.doc.id);
+        }
+
         sortedEvents.shift();
       } else {
         break;
