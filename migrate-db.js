@@ -20,6 +20,7 @@ const {
   LT,
   CreateIndex,
   Do,
+  IsNull,
 } = fauna.query;
 
 //Client for source DB
@@ -166,7 +167,7 @@ async function validateTargetCollection(coll) {
   return res;
 }
 
-function getApplyEventQuery(e) {
+async function getApplyEventQuery(e) {
   const docRef = e.doc;
   const docTs = e.ts;
   const docData = e.data;
@@ -188,8 +189,22 @@ function getApplyEventQuery(e) {
 
     case "update":
       if (docData == null) {
-        console.log(`Update event for ${docRef} at ${docTs} has null data, skipping`);
-        return null;
+        // checking source data at ts
+        const isNullData = await sourceClient(Let(
+          {
+            ref: docRef,
+            ts: docTs,
+          },
+          At(
+            Var("ts"),
+            IsNull(Select("data", Get(Var("ref"))))
+          )
+        ));
+
+        if (!isNullData) {
+          console.log(`Skipping no-op update: ${docRef} at ${docTs}`);
+          return null;
+        }
       }
       console.log(`Updating document: ${docRef} at ${docTs}`);
       return Let(
