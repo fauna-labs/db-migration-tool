@@ -5,6 +5,7 @@ const {
 } = require("./functions.js");
 
 const {
+  At,
   Let,
   Get,
   Var,
@@ -20,6 +21,7 @@ const {
   LT,
   CreateIndex,
   Do,
+  IsNull,
 } = fauna.query;
 
 //Client for source DB
@@ -166,7 +168,7 @@ async function validateTargetCollection(coll) {
   return res;
 }
 
-function getApplyEventQuery(e) {
+async function getApplyEventQuery(e) {
   const docRef = e.doc;
   const docTs = e.ts;
   const docData = e.data;
@@ -187,6 +189,23 @@ function getApplyEventQuery(e) {
       );
 
     case "update":
+      if (docData == null) {
+        // checking source data at ts
+        const isNullData = await sourceClient.query(
+          Let(
+            {
+              ref: docRef,
+              ts: docTs,
+            },
+            At(Var("ts"), IsNull(Select("data", Get(Var("ref")))))
+          )
+        );
+
+        if (!isNullData) {
+          console.log(`Skipping no-op update: ${docRef} at ${docTs}`);
+          return null;
+        }
+      }
       console.log(`Updating document: ${docRef} at ${docTs}`);
       return Let(
         {
@@ -350,8 +369,15 @@ async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallel
       const evt = sortedEvents[0];
 
       if (!seenIds.includes(evt.doc.id)) {
-        eventQueries.push(getApplyEventQuery(evt));
-        seenIds.push(evt.doc.id);
+        const eventQuery = await getApplyEventQuery(evt);
+
+        if (eventQuery) {
+          eventQueries.push(eventQuery);
+          seenIds.push(evt.doc.id);
+        } else {
+          i--;
+        }
+
         sortedEvents.shift();
       } else {
         break;

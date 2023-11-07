@@ -57,6 +57,8 @@ function parseParallelism(value, dummyPrevious) {
   lastProcessed.updates.ts = options.timestamp;
   lastProcessed.removes.ts = options.timestamp;
 
+  console.log(`BEGIN synchronizing events in collection '${options.collection}' at ${new Date().toISOString()}`);
+
   let res = await migrate(options.collection, index, duration, size, options.source, options.target, options.parallelism);
 
   while (
@@ -78,6 +80,8 @@ function parseParallelism(value, dummyPrevious) {
   if (!res) {
     throw new Error("Validation error; can't continue");
   }
+
+  console.log(`END synchronizing events in collection '${options.collection}' at ${new Date().toISOString()}`);
 })().catch((err) => {
   console.error(err);
   process.exit(1);
