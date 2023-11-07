@@ -5,6 +5,7 @@ const {
 } = require("./functions.js");
 
 const {
+  At,
   Let,
   Get,
   Var,
@@ -373,6 +374,8 @@ async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallel
         if (eventQuery) {
           eventQueries.push(eventQuery);
           seenIds.push(evt.doc.id);
+        } else {
+          i--;
         }
 
         sortedEvents.shift();
