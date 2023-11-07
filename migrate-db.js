@@ -368,7 +368,7 @@ async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallel
       const evt = sortedEvents[0];
 
       if (!seenIds.includes(evt.doc.id)) {
-        const eventQuery = getApplyEventQuery(evt);
+        const eventQuery = await getApplyEventQuery(evt);
 
         if (eventQuery) {
           eventQueries.push(eventQuery);
