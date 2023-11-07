@@ -190,16 +190,15 @@ async function getApplyEventQuery(e) {
     case "update":
       if (docData == null) {
         // checking source data at ts
-        const isNullData = await sourceClient(Let(
-          {
-            ref: docRef,
-            ts: docTs,
-          },
-          At(
-            Var("ts"),
-            IsNull(Select("data", Get(Var("ref"))))
+        const isNullData = await sourceClient.query(
+          Let(
+            {
+              ref: docRef,
+              ts: docTs,
+            },
+            At(Var("ts"), IsNull(Select("data", Get(Var("ref")))))
           )
-        ));
+        );
 
         if (!isNullData) {
           console.log(`Skipping no-op update: ${docRef} at ${docTs}`);
