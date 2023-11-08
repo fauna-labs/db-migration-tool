@@ -1,7 +1,7 @@
 const { migrate, initialize } = require("./migrate-db.js");
 const { lastProcessed } = require("./migrate-db.js");
 const { pause, parseParallelism, validate } = require("./utils.js");
-const { program, InvalidArgumentError } = require("commander");
+const { program } = require("commander");
 
 (async () => {
   // Start the program - first time
