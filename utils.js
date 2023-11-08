@@ -32,7 +32,7 @@ async function validate(options) {
     }
 
     if (sourceData.data.data.length !== targetData.data.data.length) {
-      console.error("MISMATCH in count of documents in the current page");
+      throw new Error("MISMATCH in count of documents in the current page; can't continue");
     }
 
     for (let i = 0; i < sourceData.data.data.length; i++) {
