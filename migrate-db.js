@@ -398,10 +398,34 @@ async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallel
   }
 }
 
-async function migrate(coll, index, duration, size, sourceKey, targetKey, maxParallelism) {
+async function migrate(coll, index, duration, size, maxParallelism) {
+  console.log();
   var liveEvents = [];
   var removes = [];
 
+  const startString = new Date(lastProcessed.startTime / 1000).toISOString()
+  const endString = new Date(
+    lastProcessed.startTime / 1000 + duration * 60 * 1000
+  ).toISOString()
+
+  console.log(`Searching for events between ${startString} and ${endString}`)
+  var docEvents = await getAllEvents(index, duration, size, liveEvents)
+    .then((ev) => ev)
+    .catch((e) => {
+      throw e;
+    });
+
+  var collEvents = await getRemoveEvents(coll, duration, size, removes)
+    .then((ev) => ev)
+    .catch((e) => {
+      throw e;
+    });
+
+  await flattenAndSortEvents(docEvents, collEvents, maxParallelism);
+}
+
+// Must call this before migrate()
+async function initialize(coll, index, sourceKey, targetKey) {
   sourceClient = new fauna.Client({
     secret: sourceKey,
   });
@@ -435,28 +459,9 @@ async function migrate(coll, index, duration, size, sourceKey, targetKey, maxPar
     return false;
   }
 
-  const startString = new Date(lastProcessed.startTime / 1000).toISOString()
-  const endString = new Date(
-    lastProcessed.startTime / 1000 + duration * 60 * 1000
-  ).toISOString()
-
-  console.log(`Searching for events between ${startString} and ${endString}`)
-  var docEvents = await getAllEvents(index, duration, size, liveEvents)
-    .then((ev) => ev)
-    .catch((e) => {
-      throw e;
-    });
-
-  var collEvents = await getRemoveEvents(coll, duration, size, removes)
-    .then((ev) => ev)
-    .catch((e) => {
-      throw e;
-    });
-
-  await flattenAndSortEvents(docEvents, collEvents, maxParallelism);
-
   return true;
 }
+
 //keep track of last fetched document ref and timestamp
 var lastProcessed = {
   startTime: null,
@@ -469,4 +474,4 @@ var lastProcessed = {
   removes: { ref: null, ts: startTime },
 };*/
 
-module.exports = { lastProcessed, migrate };
+module.exports = { lastProcessed, migrate, initialize };
