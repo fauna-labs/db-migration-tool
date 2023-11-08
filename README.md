@@ -115,11 +115,14 @@ Several constants are defined in `main.js` that can be adjusted to optimize the 
    -  Increase the `duration` constant to widen the window of events that are processed at once, or decrease it to avoid rate limiting.
 -  `interval` - (default: 30)  time to pause between reading and applying events - in seconds
    -  Decrease the `interval` constant to take less time between iterations, or increase it to avoid rate limiting.
--  `iterations` - (default: 20)  Define the total number of iterations
+-  `iterations` - (default: 20)  Define the total number of iterations.
+   -  The overall window of events that are processed is `duration` * `iterations` minutes.
 -  `size` - (default: 64) page size
    -  You should not need to change this. The tool paginates through all events in the duration window. There is little benefit to increasing or decreasing the page size.
 
 These constants are optimized for migration of databases with a large number of events in each 30 minute window. If you want to change performance, start with the `duration` constant and adjust the others as needed.
+
+For example, if you are on the Startup plan, with a [throughput limit of 1000 Writes per second](https://docs.fauna.com/fauna/current/plan_billing/plan_details#throughput-limits), then you should pick a duration that would limit the number of events to under 1000.
 
 ### Best Practices
 - To avoid gaps in synchronization, you should use a start timestamp less than the timestamp of the last synced write on the target collection.
@@ -135,7 +138,7 @@ These constants are optimized for migration of databases with a large number of 
 ### 2. Synchronization
 
 > [!NOTE]
-> If you paused writes to your database before the snapshot time, this script is not needed to because no data needs to be synchronized. You can skip to Application cutover.
+> If you paused writes to your database before the snapshot time, and intend to keep it paused for the duration of the migration, this script is not needed to because no data needs to be synchronized. You can skip to Application cutover.
 
 The script is [idempotent](https://en.wikipedia.org/wiki/Idempotence), so it can safely be run multiple times. We recommend running the script at least once before pausing writes for your application to cutover. This gives you the chance to monitor the time it takes to perform the sync operation and plan ahead.
 
