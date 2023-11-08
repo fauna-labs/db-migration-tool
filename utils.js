@@ -1,4 +1,5 @@
 const { Client, fql } = require("fauna");
+const { InvalidArgumentError } = require("commander");
 
 async function validate(options) {
   function validateField(sourceRow, targetRow, key) {
