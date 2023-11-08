@@ -6,8 +6,9 @@
   "author": "Fauna",
   "license": "MIT",
   "dependencies": {
-    "faunadb": "^4.8.0",
-    "commander": "^11.1.0"
+    "commander": "^11.1.0",
+    "fauna": "^1.3.1",
+    "faunadb": "^4.8.0"
   },
   "scripts": {
     "migrate": "node main.js"

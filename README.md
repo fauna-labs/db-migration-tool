@@ -60,14 +60,15 @@ $ node main.js --source $SOURCE_KEY --target $TARGET_KEY --collection $COLLECTIO
 
 CLI Options:
 ```
-Options:
   -v, --version               output the version number
   -s, --source <string>       admin secret for the source DB
   -t, --target <string>       admin secret for the target DB
   -c, --collection <string>   the name of the collection to be sync'ed
-  -d, --timestamp <string>    the timestamp from which to start syncing
+  -d, --timestamp <number>    the timestamp from which to start syncing
   -i, --index <string>        [optional] the name of the index to use to sync the collection
   -p, --parallelism <number>  [optional] apply up to N events per transaction (default: 10)
+  --validate <number>         [optional] paginate through documents N at a time (1000 max) and compare source to target;
+                              WARNING: this could take a long time and will accrue additional read ops
   -h, --help                  display help for command
 ```
 
