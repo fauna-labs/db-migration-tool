@@ -1,6 +1,20 @@
 const { Client, fql } = require("fauna");
 
 async function validate(options) {
+  function validateField(sourceRow, targetRow, key) {
+    if (key !== "ts") {
+      if (typeof sourceRow[key] === "object") {
+        for (let subkey in sourceRow[key]) {
+          validateField(sourceRow[key], targetRow[key], subkey);
+        }
+      } else {
+        if (sourceRow[key] !== targetRow[key]) {
+          console.error(`MISMATCH in doc ID '${sourceRow["id"]}' in field '${key}'`);
+        }
+      }
+    }
+  }
+
   const pageSize = Math.min(options.validate, 1000);
   const sourceClient = new Client({ secret: options.source });
   const targetClient = new Client({ secret: options.target });
@@ -36,20 +50,6 @@ async function validate(options) {
       );
     }
   } while (sourceData.data.after)
-}
-
-function validateField(sourceRow, targetRow, key) {
-  if (key !== "ts") {
-    if (typeof sourceRow[key] === "object") {
-      for (let subkey in sourceRow[key]) {
-        validateField(sourceRow[key], targetRow[key], subkey);
-      }
-    } else {
-      if (sourceRow[key] !== targetRow[key]) {
-        console.error(`MISMATCH in doc ID '${sourceRow["id"]}' in field '${key}'`);
-      }
-    }
-  }
 }
 
 async function pause(ms) {
