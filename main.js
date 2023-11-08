@@ -59,9 +59,9 @@ function parseParallelism(value, dummyPrevious) {
 
   console.log(`BEGIN synchronizing events in collection '${options.collection}' at ${new Date().toISOString()}`);
 
-  let validated = await initialize(options.collection, index, options.source, options.target)
-  if (!validated) {
-    throw new Error("Validation error; can't continue")
+  let initialized = await initialize(options.collection, index, options.source, options.target)
+  if (!initialized) {
+    throw new Error("Initialization error; can't continue")
   }
 
   await migrate(options.collection, index, duration, size, options.parallelism);
