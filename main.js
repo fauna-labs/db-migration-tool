@@ -1,4 +1,4 @@
-const { migrate } = require("./migrate-db.js");
+const { migrate, initialize } = require("./migrate-db.js");
 const { lastProcessed } = require("./migrate-db.js");
 const { program, InvalidArgumentError } = require("commander");
 
@@ -59,10 +59,14 @@ function parseParallelism(value, dummyPrevious) {
 
   console.log(`BEGIN synchronizing events in collection '${options.collection}' at ${new Date().toISOString()}`);
 
-  let res = await migrate(options.collection, index, duration, size, options.source, options.target, options.parallelism);
+  let validated = await initialize(options.collection, index, options.source, options.target)
+  if (!validated) {
+    throw new Error("Validation error; can't continue")
+  }
+
+  await migrate(options.collection, index, duration, size, options.parallelism);
 
   while (
-    res &&
     iterations > 0 &&
     lastProcessed.startTime < Date.now() * 1000
   ) {
@@ -74,11 +78,7 @@ function parseParallelism(value, dummyPrevious) {
 
     iterations--;
 
-    res = await migrate(options.collection, index, duration, size, options.source, options.target, options.parallelism);
-  }
-
-  if (!res) {
-    throw new Error("Validation error; can't continue");
+    await migrate(options.collection, index, duration, size, options.parallelism);
   }
 
   console.log(`END synchronizing events in collection '${options.collection}' at ${new Date().toISOString()}`);
