@@ -9,7 +9,7 @@ async function validate(options) {
         }
       } else {
         if (sourceRow[key] !== targetRow[key]) {
-          console.error(`MISMATCH in doc ID '${sourceRow["id"]}' in field '${key}'`);
+          throw new Error(`Field '${key}': ${sourceRow[key]} <> ${targetRow[key]}`);
         }
       }
     }
@@ -40,7 +40,12 @@ async function validate(options) {
       let targetRow = targetData.data.data[i];
 
       for (let key in sourceRow) {
-        validateField(sourceRow, targetRow, key);
+        try {
+          validateField(sourceRow, targetRow, key);
+        } catch (error) {
+          console.error(`Mismatch found in doc ID '${sourceRow["id"]}'`);
+          throw error;
+        }
       }
     }
 
