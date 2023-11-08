@@ -435,6 +435,12 @@ async function migrate(coll, index, duration, size, sourceKey, targetKey, maxPar
     return false;
   }
 
+  const startString = new Date(lastProcessed.startTime / 1000).toISOString()
+  const endString = new Date(
+    lastProcessed.startTime / 1000 + duration * 60 * 1000
+  ).toISOString()
+
+  console.log(`Searching for events between ${startString} and ${endString}`)
   var docEvents = await getAllEvents(index, duration, size, liveEvents)
     .then((ev) => ev)
     .catch((e) => {

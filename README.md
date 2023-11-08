@@ -30,6 +30,13 @@ $ cd to/my/directory
 $ git clone https://github.com/fauna-labs/db-migration-tool.git
 ```
 
+Install dependencies
+
+```shell
+$ cd to/my/directory/db-migration-tool
+$ npm install
+```
+
 ### Prepare your databases
 
 1. Enable `history_days` on all collections that need to be migrated.
@@ -100,6 +107,20 @@ Timestamp to String
 Epoch(1698969600000000, "microseconds") // Time("2023-11-03T00:00:00Z")
 ```
 
+### Configuring tool constants
+
+Several constants are defined in `main.js` that can be adjusted to optimize the performance of the tool.
+
+-  `duration` - (default: 30) fetch events for the time duration in minutes
+   -  Increase the `duration` constant to widen the window of events that are processed at once, or decrease it to avoid rate limiting.
+-  `interval` - (default: 30)  time to pause between reading and applying events - in seconds
+   -  Decrease the `interval` constant to take less time between iterations, or increase it to avoid rate limiting.
+-  `iterations` - (default: 20)  Define the total number of iterations
+-  `size` - (default: 64) page size
+   -  You should not need to change this. The tool paginates through all events in the duration window. There is little benefit to increasing or decreasing the page size.
+
+These constants are optimized for migration of databases with a large number of events in each 30 minute window. If you want to change performance, start with the `duration` constant and adjust the others as needed.
+
 ### Best Practices
 - To avoid gaps in synchronization, you should use a start timestamp less than the timestamp of the last synced write on the target collection.
 - To reduce the overall time to sync an entire database, run one instance of this tool for each collection, in parallel.
@@ -147,10 +168,7 @@ Application cutover is the action of transitioning your application from using t
 
 429 errors are returned from Fauna when you encounter throughput limits (i.e. your account is being rate-limited). To adjust for this:
 - Reduce parallelism using the `--parallelism` option.
-- Tweak the following constant values in `main.js`:
-    - `duration` - reduce this to narrow the time range for events per iteration
-    - `size` - reduce this to lookup fewer documents at a time
-    - `interval` - increase this to wait longer between iterations so the query limits can "refill"
+- Tweak the following constant values in `main.js` to reduce the number of events processed per each interval
 
 
 ## Limitations
