@@ -55,11 +55,11 @@ const { program, InvalidArgumentError } = require("commander");
     ) {
       lastProcessed.startTime += duration * 60 * 1000 * 1000; //increase the start time by 'duration' amount of minutes at every iteration
 
-        await pause(interval * 1000).then(
-          console.log(`Sleeping for ${interval} seconds`)
-        ); //sleep in ms
+      await pause(interval * 1000).then(
+        console.log(`Sleeping for ${interval} seconds`)
+      ); //sleep in ms
 
-        iterations--;
+      iterations--;
 
       await migrate(options.collection, index, duration, size, options.parallelism);
     }
