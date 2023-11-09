@@ -31,10 +31,10 @@ const { program } = require("commander");
     var index = options.index ?? "_migration_index_for_" + options.collection;
 
     // TUNABLE CONSTANTS
-    var duration = 30; //fetch events for the time duration in minutes
-    var size = 64; //page size
-    var interval = 30; // time to pause between reading and applying events - in seconds
-    var iterations = 20; // Define the total number of iterations
+    var duration = 30;   // Time span (in minutes) to gather events
+    var iterations = 20; // Number of iterations to run the tool
+    var interval = 10;   // Wait time between iterations in seconds
+    var size = 64;       // Page size for retrieving documents from the custom index
 
     lastProcessed.startTime = options.timestamp;
     lastProcessed.updates.ts = options.timestamp;
@@ -47,12 +47,9 @@ const { program } = require("commander");
       throw new Error("Initialization error; can't continue")
     }
 
-    await migrate(options.collection, index, duration, size, options.parallelism);
+    do {
+      await migrate(options.collection, index, duration, size, options.parallelism);
 
-    while (
-      iterations > 0 &&
-      lastProcessed.startTime < Date.now() * 1000
-    ) {
       lastProcessed.startTime += duration * 60 * 1000 * 1000; //increase the start time by 'duration' amount of minutes at every iteration
 
       await pause(interval * 1000).then(
@@ -60,9 +57,10 @@ const { program } = require("commander");
       ); //sleep in ms
 
       iterations--;
-
-      await migrate(options.collection, index, duration, size, options.parallelism);
-    }
+    } while (
+      iterations > 0 &&
+      lastProcessed.startTime < Date.now() * 1000
+    )
 
     console.log(`END synchronizing events in collection '${options.collection}' at ${new Date().toISOString()}`);
   }
