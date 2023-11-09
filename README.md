@@ -112,14 +112,14 @@ Epoch(1698969600000000, "microseconds") // Time("2023-11-03T00:00:00Z")
 
 Several constants are defined in `main.js` that can be adjusted to optimize the performance of the tool.
 
--  `duration` - (default: 30) fetch events for the time duration in minutes
+-  `duration` - (default: 30) Time span (in minutes) to gather events
    -  Increase the `duration` constant to widen the window of events that are processed at once, or decrease it to avoid rate limiting.
--  `interval` - (default: 30)  time to pause between reading and applying events - in seconds
-   -  Decrease the `interval` constant to take less time between iterations, or increase it to avoid rate limiting.
--  `iterations` - (default: 20)  Define the total number of iterations.
+-  `iterations` - (default: 20)  Number of iterations to run the tool
    -  The overall window of events that are processed is `duration` * `iterations` minutes.
--  `size` - (default: 64) page size
-   -  You should not need to change this. The tool paginates through all events in the duration window. There is little benefit to increasing or decreasing the page size.
+-  `interval` - (default: 10)  Wait time between iterations in seconds
+   -  Decrease the `interval` constant to take less time between iterations, or increase it to avoid rate limiting.
+-  `size` - (default: 64) Page size for retrieving documents from the custom index
+   -  If your documents are very large, you may want to decrease this value to limit the amount of data processed per transaction. Otherwise, you should not need to change this. The tool paginates through all events in the duration window. There is typically little benefit to increasing or decreasing the page size.
 
 These constants are optimized for migration of databases with a large number of events in each 30 minute window. If you want to change performance, start with the `duration` constant and adjust the others as needed.
 

@@ -31,7 +31,7 @@ const { program } = require("commander");
     var index = options.index ?? "_migration_index_for_" + options.collection;
 
     // TUNABLE CONSTANTS
-    var duration = 30;   // Time span (in minutes) to gather events from
+    var duration = 30;   // Time span (in minutes) to gather events
     var iterations = 20; // Number of iterations to run the tool
     var interval = 10;   // Wait time between iterations in seconds
     var size = 64;       // Page size for retrieving documents from the custom index
