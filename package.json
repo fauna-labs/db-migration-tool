@@ -8,9 +8,11 @@
   "dependencies": {
     "commander": "^11.1.0",
     "fauna": "^1.3.1",
-    "faunadb": "^4.8.0"
+    "faunadb": "^4.8.0",
+    "prettier": "^3.1.1"
   },
   "scripts": {
-    "migrate": "node main.js"
+    "migrate": "node main.js",
+    "format": "prettier --write ."
   }
 }

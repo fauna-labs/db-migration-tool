@@ -1,7 +1,7 @@
 const fauna = require("faunadb");
 const {
   getEventsFromCollectionFunctionQuery,
-  getRemoveEventsFromCollectionFunctionQuery
+  getRemoveEventsFromCollectionFunctionQuery,
 } = require("./functions.js");
 
 const {
@@ -30,8 +30,8 @@ var sourceClient;
 //Client for destination DB
 var targetClient;
 
-var get_events_from_collection = "_get_events_from_collection"
-var get_remove_events_from_collection = "_get_remove_events_from_collection"
+var get_events_from_collection = "_get_events_from_collection";
+var get_remove_events_from_collection = "_get_remove_events_from_collection";
 
 async function validateCollection(coll) {
   const qry = Let(
@@ -47,11 +47,11 @@ async function validateCollection(coll) {
         If(
           LT(0, Var("h_days")),
           Var("h_days"),
-          "Please enable history for this collection"
-        )
+          "Please enable history for this collection",
+        ),
       ),
-      "Please make sure the collection exists on the source DB"
-    )
+      "Please make sure the collection exists on the source DB",
+    ),
   );
 
   const res = await sourceClient
@@ -71,18 +71,16 @@ async function ensureIndex(index, collection) {
       index: index,
       collection: collection,
     },
-    If(Exists(Index(Var("index"))),
+    If(
+      Exists(Index(Var("index"))),
       true,
       // Doesn't exist, create it.
       CreateIndex({
         name: Var("index"),
         source: Collection(Var("collection")),
-        values: [
-          { field: ['ts'] },
-          { field: ['ref'] }
-        ]
-      })
-    )
+        values: [{ field: ["ts"] }, { field: ["ref"] }],
+      }),
+    ),
   );
 
   // Returns true or an exception.
@@ -100,12 +98,12 @@ async function ensureIndex(index, collection) {
       collection: collection,
     },
     // If it exists, check if it's active.
-    Let({
-      is_active: Select('active', Get(Index(Var("index"))))
-    },
-      Var("is_active")
-    )
-
+    Let(
+      {
+        is_active: Select("active", Get(Index(Var("index")))),
+      },
+      Var("is_active"),
+    ),
   );
 
   return await sourceClient
@@ -118,7 +116,7 @@ async function ensureIndex(index, collection) {
 }
 
 async function ensureGetEventsFromCollection() {
-  const qry = getEventsFromCollectionFunctionQuery(get_events_from_collection)
+  const qry = getEventsFromCollectionFunctionQuery(get_events_from_collection);
 
   const res = await sourceClient
     .query(qry)
@@ -132,7 +130,9 @@ async function ensureGetEventsFromCollection() {
 }
 
 async function ensureGetRemoveEventsFromCollection() {
-  const qry = getRemoveEventsFromCollectionFunctionQuery(get_remove_events_from_collection)
+  const qry = getRemoveEventsFromCollectionFunctionQuery(
+    get_remove_events_from_collection,
+  );
 
   const res = await sourceClient
     .query(qry)
@@ -153,8 +153,8 @@ async function validateTargetCollection(coll) {
     If(
       Exists(Collection(Var("coll"))),
       true,
-      "Please make sure the collection exists on the destination DB"
-    )
+      "Please make sure the collection exists on the destination DB",
+    ),
   );
 
   const res = await targetClient
@@ -172,7 +172,7 @@ async function getApplyEventQuery(e) {
   const docRef = e.doc;
   const docTs = e.ts;
   const docData = e.data;
- 
+
   switch (e.action) {
     case "create":
       console.log(`Creating document: ${docRef} at ${docTs}`);
@@ -184,8 +184,8 @@ async function getApplyEventQuery(e) {
         If(
           Exists(Var("ref")),
           "document already exists",
-          Create(Var("ref"), { data: Var("doc") })
-        )
+          Create(Var("ref"), { data: Var("doc") }),
+        ),
       );
 
     case "update":
@@ -197,8 +197,8 @@ async function getApplyEventQuery(e) {
               ref: docRef,
               ts: docTs,
             },
-            At(Var("ts"), IsNull(Select("data", Get(Var("ref")))))
-          )
+            At(Var("ts"), IsNull(Select("data", Get(Var("ref"))))),
+          ),
         );
 
         if (!isNullData) {
@@ -215,8 +215,8 @@ async function getApplyEventQuery(e) {
         If(
           Exists(Var("ref")),
           Update(Var("ref"), { data: Var("doc") }),
-          "no such document"
-        )
+          "no such document",
+        ),
       );
 
     case "remove":
@@ -229,8 +229,8 @@ async function getApplyEventQuery(e) {
         If(
           Exists(Var("ref")),
           Delete(Var("ref")),
-          "Document does not exist or is already deleted"
-        )
+          "Document does not exist or is already deleted",
+        ),
       );
 
     default:
@@ -256,7 +256,7 @@ async function getRemoveEvents(coll, duration, size, removes) {
       size: size,
       before: before,
       after: after,
-      get_remove_events_from_collection: get_remove_events_from_collection
+      get_remove_events_from_collection: get_remove_events_from_collection,
     },
     Call(Var("get_remove_events_from_collection"), [
       Var("ts"),
@@ -265,7 +265,7 @@ async function getRemoveEvents(coll, duration, size, removes) {
       Var("size"),
       Var("after"),
       Var("before"),
-    ])
+    ]),
   );
   const res = await sourceClient
     .query(qry)
@@ -295,7 +295,6 @@ async function getRemoveEvents(coll, duration, size, removes) {
 }
 
 async function getAllEvents(index, duration, size, liveEvents) {
-  
   var startTime =
     lastProcessed.startTime > lastProcessed.updates.ts
       ? lastProcessed.startTime
@@ -323,7 +322,7 @@ async function getAllEvents(index, duration, size, liveEvents) {
       Var("size"),
       Var("after"),
       Var("before"),
-    ])
+    ]),
   );
   const events = await sourceClient
     .query(qry)
@@ -353,7 +352,11 @@ async function getAllEvents(index, duration, size, liveEvents) {
   }
 }
 
-async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallelism) {
+async function flattenAndSortEvents(
+  docEvents = [],
+  collEvents = [],
+  maxParallelism,
+) {
   var allEvents = docEvents.concat(collEvents);
   const flattened = allEvents.flat(Infinity);
   // combine updates and removes and sort them in timestamp order so they are replayed in the exact order
@@ -385,7 +388,11 @@ async function flattenAndSortEvents(docEvents = [], collEvents = [], maxParallel
     }
 
     if (eventQueries.length > 0) {
-      console.log(`Applying batch of ${eventQueries.length} event${eventQueries.length == 1 ? "" : "s"}`);
+      console.log(
+        `Applying batch of ${eventQueries.length} event${
+          eventQueries.length == 1 ? "" : "s"
+        }`,
+      );
 
       await targetClient
         .query(Do(...eventQueries, null))
@@ -403,12 +410,12 @@ async function migrate(coll, index, duration, size, maxParallelism) {
   var liveEvents = [];
   var removes = [];
 
-  const startString = new Date(lastProcessed.startTime / 1000).toISOString()
+  const startString = new Date(lastProcessed.startTime / 1000).toISOString();
   const endString = new Date(
-    lastProcessed.startTime / 1000 + duration * 60 * 1000
-  ).toISOString()
+    lastProcessed.startTime / 1000 + duration * 60 * 1000,
+  ).toISOString();
 
-  console.log(`Searching for events between ${startString} and ${endString}`)
+  console.log(`Searching for events between ${startString} and ${endString}`);
   var docEvents = await getAllEvents(index, duration, size, liveEvents)
     .then((ev) => ev)
     .catch((e) => {

@@ -10,7 +10,9 @@ async function validate(options) {
         }
       } else {
         if (sourceRow[key] !== targetRow[key]) {
-          throw new Error(`Field '${key}': ${sourceRow[key]} <> ${targetRow[key]}`);
+          throw new Error(
+            `Field '${key}': ${sourceRow[key]} <> ${targetRow[key]}`,
+          );
         }
       }
     }
@@ -25,15 +27,21 @@ async function validate(options) {
 
   do {
     if (sourceData && sourceData.data.after) {
-      sourceData = await sourceClient.query(fql`Set.paginate(${sourceData.data.after})`);
-      targetData = await targetClient.query(fql`Set.paginate(${targetData.data.after})`);
+      sourceData = await sourceClient.query(
+        fql`Set.paginate(${sourceData.data.after})`,
+      );
+      targetData = await targetClient.query(
+        fql`Set.paginate(${targetData.data.after})`,
+      );
     } else {
       sourceData = await sourceClient.query(query);
       targetData = await targetClient.query(query);
     }
 
     if (sourceData.data.data.length !== targetData.data.data.length) {
-      throw new Error("MISMATCH in count of documents in the current page; can't continue");
+      throw new Error(
+        "MISMATCH in count of documents in the current page; can't continue",
+      );
     }
 
     for (let i = 0; i < sourceData.data.data.length; i++) {
@@ -52,10 +60,12 @@ async function validate(options) {
 
     if (sourceData.data.after) {
       await pause(10000).then(
-        console.log(`Waiting 10s and continuing with page token ${sourceData.data.after}`)
+        console.log(
+          `Waiting 10s and continuing with page token ${sourceData.data.after}`,
+        ),
       );
     }
-  } while (sourceData.data.after)
+  } while (sourceData.data.after);
 }
 
 async function pause(ms) {
@@ -66,7 +76,9 @@ function parseParallelism(value, dummyPrevious) {
   let parsedValue = parseInt(value, 10);
 
   if (isNaN(parsedValue)) {
-    throw new InvalidArgumentError("Invalid 'parallelism' arg; please pass an integer from 1 to 10");
+    throw new InvalidArgumentError(
+      "Invalid 'parallelism' arg; please pass an integer from 1 to 10",
+    );
   }
 
   if (parsedValue > 10) {
