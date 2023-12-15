@@ -1,3 +1,5 @@
+// @ts-check
+
 const fauna = require("faunadb");
 
 const {
