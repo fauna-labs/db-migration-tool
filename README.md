@@ -112,16 +112,16 @@ Epoch(1698969600000000, "microseconds") // Time("2023-11-03T00:00:00Z")
 
 Several constants are defined in `main.js` that can be adjusted to optimize the performance of the tool.
 
--  `duration` - (default: 30) Time span (in minutes) to gather events
-   -  Increase the `duration` constant to widen the window of events that are processed at once, or decrease it to avoid rate limiting.
--  `iterations` - (default: 20)  Number of iterations to run the tool
-   -  The overall window of events that are processed is `duration` * `iterations` minutes.
--  `interval` - (default: 10)  Wait time between iterations in seconds
-   -  Decrease the `interval` constant to take less time between iterations, or increase it to avoid rate limiting.
--  `size` - (default: 64) Page size for retrieving documents from the custom index
+-  `DURATION` - (default: 30) Time span (in minutes) to gather events
+   -  Increase the `DURATION` constant to widen the window of events that are processed at once, or decrease it to avoid rate limiting.
+-  `ITERATIONS` - (default: 20)  Number of iterations to run the tool
+   -  The overall window of events that are processed is `DURATION` * `ITERATIONS` minutes.
+-  `WAIT_TIME` - (default: 10)  Wait time between iterations in seconds
+   -  Decrease the `WAIT_TIME` constant to take less time between iterations, or increase it to avoid rate limiting.
+-  `DEFAULT_PAGE_SIZE` - (default: 64) The default Page size for retrieving documents from the custom index
    -  If your documents are very large, you may want to decrease this value to limit the amount of data processed per transaction. Otherwise, you should not need to change this. The tool paginates through all events in the duration window. There is typically little benefit to increasing or decreasing the page size.
 
-These constants are optimized for migration of databases with a large number of events in each 30 minute window. If you want to change performance, start with the `duration` constant and adjust the others as needed.
+These constants are optimized for migration of databases with a large number of events in each 30 minute window. If you want to change performance, start with the `DURATION` constant and adjust the others as needed.
 
 For example, if you are on the Startup plan, with a [throughput limit of 1000 Writes per second](https://docs.fauna.com/fauna/current/plan_billing/plan_details#throughput-limits), then you should pick a duration that would limit the number of events to under 1000.
 

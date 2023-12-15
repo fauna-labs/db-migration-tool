@@ -1,14 +1,22 @@
-const { migrate, initialize } = require("./migrate-db.js");
-const { lastProcessed } = require("./migrate-db.js");
+// @ts-check
+
+const { MigrationClient } = require("./migration-client.js");
 const { pause, parseParallelism, validate } = require("./utils.js");
 const { program } = require("commander");
+
+// TUNABLE CONSTANTS
+const DURATION = 30; // Time span (in minutes) to gather events
+const ITERATIONS = 20; // Number of iterations to run the tool
+const WAIT_TIME = 10; // Wait time between iterations in seconds
+const DEFAULT_PAGE_SIZE = 64; // Page size for retrieving documents from the custom index
 
 (async () => {
   // Start the program - first time
   // Provide the startTime, collection, index and how many minutes of writes the destination db needs to catch up each time.
   // Number of iterations are configurable
-  // With duration=30 and iteration=10, it migrates  30 mins worth of data from source db and does this 10 times,
-  // waiting 2 mins (interval=120) between each fetch
+  // With DURATION=30 and ITERATIONS=10, it migrates 30 mins worth of data from source db and does this 10 times,
+  // waiting WAIT_TIME seconds between each iteration.
+  
   program
     .name("fauna-db-sync")
     .description("migrates lastest writes from one DB to another")
@@ -47,51 +55,51 @@ const { program } = require("commander");
   if (options.validate) {
     await validate(options);
   } else {
-    var index = options.index ?? "_migration_index_for_" + options.collection;
+    const collectionName = options.collection;
+    const indexName = options.index ?? "_migration_index_for_" + collectionName;
 
-    // TUNABLE CONSTANTS
-    var duration = 30;   // Time span (in minutes) to gather events
-    var iterations = 20; // Number of iterations to run the tool
-    var interval = 10;   // Wait time between iterations in seconds
-    var size = 64;       // Page size for retrieving documents from the custom index
+    const migrator = new MigrationClient({
+      sourceKey: options.source,
+      targetKey: options.target,
+      defaultPageSize: DEFAULT_PAGE_SIZE,
+      maxParallelism: options.parallelism,
+    });
 
-    lastProcessed.startTime = options.timestamp;
-    lastProcessed.updates.ts = options.timestamp;
-    lastProcessed.removes.ts = options.timestamp;
+    console.log("Initializing UDFs...");
+    await migrator.initializeSourceFunctions();
 
-    console.log(
-      `BEGIN synchronizing events in collection '${
-        options.collection
-      }' at ${new Date().toISOString()}`,
-    );
-
-    let initialized = await initialize(
-      options.collection,
-      index,
-      options.source,
-      options.target,
-    );
+    console.log(`Initializing Collection '${collectionName}'...`);
+    const initialized = await migrator.initializeCollection({
+      collectionName,
+      indexName,
+    });
     if (!initialized) {
       throw new Error("Initialization error; can't continue");
     }
 
+    console.log(
+      `BEGIN synchronizing events in collection '${collectionName}' at ${new Date().toISOString()}...`,
+    );
+
+    let iterations = ITERATIONS;
+    let startTime = options.timestamp;
+
     do {
-      await migrate(
-        options.collection,
-        index,
-        duration,
-        size,
-        options.parallelism,
-      );
+      await migrator.migrateCollection({
+        collectionName,
+        indexName,
+        startTime,
+        duration: DURATION,
+      });
 
-      lastProcessed.startTime += duration * 60 * 1000 * 1000; //increase the start time by 'duration' amount of minutes at every iteration
+      startTime += DURATION * 60 * 1000 * 1000; //increase the start time by 'DURATION' amount of minutes at every iteration
 
-      await pause(interval * 1000).then(
-        console.log(`Sleeping for ${interval} seconds`),
+      await pause(WAIT_TIME * 1000).then(() =>
+        console.log(`Sleeping for ${WAIT_TIME} seconds`),
       ); //sleep in ms
 
       iterations--;
-    } while (iterations > 0 && lastProcessed.startTime < Date.now() * 1000);
+    } while (iterations > 0 && startTime < Date.now() * 1000);
 
     console.log(
       `END synchronizing events in collection '${
