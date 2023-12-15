@@ -5,9 +5,9 @@ const { pause, parseParallelism, validate } = require("./utils.js");
 const { program } = require("commander");
 
 // TUNABLE CONSTANTS
-const DURATION = 30; // Time span (in minutes) to gather events
+const DURATION = 200; // Time span (in minutes) to gather events
 const ITERATIONS = 20; // Number of iterations to run the tool
-const WAIT_TIME = 10; // Wait time between iterations in seconds
+const WAIT_TIME = 1; // Wait time between iterations in seconds
 const DEFAULT_PAGE_SIZE = 64; // Page size for retrieving documents from the custom index
 
 (async () => {
@@ -16,7 +16,7 @@ const DEFAULT_PAGE_SIZE = 64; // Page size for retrieving documents from the cus
   // Number of iterations are configurable
   // With DURATION=30 and ITERATIONS=10, it migrates 30 mins worth of data from source db and does this 10 times,
   // waiting WAIT_TIME seconds between each iteration.
-  
+
   program
     .name("fauna-db-sync")
     .description("migrates lastest writes from one DB to another")
@@ -24,7 +24,7 @@ const DEFAULT_PAGE_SIZE = 64; // Page size for retrieving documents from the cus
     .usage("[OPTIONS]...")
     .requiredOption("-s, --source <string>", "admin secret for the source DB")
     .requiredOption("-t, --target <string>", "admin secret for the target DB")
-    .requiredOption(
+    .option(
       "-c, --collection <string>",
       "the name of the collection to be sync'ed",
     )
@@ -52,60 +52,114 @@ const DEFAULT_PAGE_SIZE = 64; // Page size for retrieving documents from the cus
 
   const options = program.opts();
 
-  if (options.validate) {
-    await validate(options);
-  } else {
+  const migrator = new MigrationClient({
+    sourceKey: options.source,
+    targetKey: options.target,
+    defaultPageSize: DEFAULT_PAGE_SIZE,
+    maxParallelism: options.parallelism,
+  });
+
+  const collectionList = [];
+  if (options.collection) {
     const collectionName = options.collection;
     const indexName = options.index ?? "_migration_index_for_" + collectionName;
-
-    const migrator = new MigrationClient({
-      sourceKey: options.source,
-      targetKey: options.target,
-      defaultPageSize: DEFAULT_PAGE_SIZE,
-      maxParallelism: options.parallelism,
-    });
-
-    console.log("Initializing UDFs...");
-    await migrator.initializeSourceFunctions();
-
-    console.log(`Initializing Collection '${collectionName}'...`);
-    const initialized = await migrator.initializeCollection({
+    collectionList.push({
       collectionName,
       indexName,
     });
-    if (!initialized) {
+  } else {
+    if (options.index) {
+      console.log(
+        "Custom index specified, but cannot be used when running with multiple collections.",
+      );
+    }
+    console.log(
+      "No collection specified. Gathering a list of all Collections in the source DB...",
+    );
+
+    const collectionNames = await migrator.listSourceCollections();
+
+    console.log(`Found ${collectionNames.length} collections:`);
+    console.log(collectionNames);
+    for (const collectionName of collectionNames) {
+      console.log(`  - ${collectionName}`);
+
+      collectionList.push({
+        collectionName,
+        indexName: "_migration_index_for_" + collectionName,
+      });
+    }
+  }
+
+  if (options.validate) {
+    for (const collection of collectionList) {
+      const { collectionName, indexName } = collection;
+
+      const validationOptions = {
+        ...options,
+        collection: collectionName,
+        index: indexName,
+      };
+
+      console.log(`Validating complete migration of Collection("${collectionName}")`);
+      await validate(validationOptions);
+    }
+  } else {
+    console.log();
+    console.log("Initializing UDFs...");
+    await migrator.initializeSourceFunctions();
+    console.log();
+
+    console.log(`Initializing Collections...`);
+    let collectionsInitialized = true;
+    for (const collection of collectionList) {
+      const { collectionName, indexName } = collection;
+
+      const initialized = await migrator.initializeCollection({
+        collectionName,
+        indexName,
+      });
+
+      collectionsInitialized = collectionsInitialized && initialized;
+    }
+    if (!collectionsInitialized) {
       throw new Error("Initialization error; can't continue");
     }
-
-    console.log(
-      `BEGIN synchronizing events in collection '${collectionName}' at ${new Date().toISOString()}...`,
-    );
+    console.log();
 
     let iterations = ITERATIONS;
     let startTime = options.timestamp;
 
     do {
-      await migrator.migrateCollection({
-        collectionName,
-        indexName,
-        startTime,
-        duration: DURATION,
-      });
+      console.log(
+        `BEGIN synchronizing events at ${new Date().toISOString()}...`,
+      );
+      console.log();
+
+      for (const collection of collectionList) {
+        const { collectionName, indexName } = collection;
+
+        console.log(`Synchronizing Collection("${collectionName}")...`)
+
+        await migrator.migrateCollection({
+          collectionName,
+          indexName,
+          startTime,
+          duration: DURATION,
+        });
+
+        console.log(`Sleeping for ${WAIT_TIME} seconds`)
+        await pause(WAIT_TIME * 1000) //sleep in ms
+        console.log()
+      }
 
       startTime += DURATION * 60 * 1000 * 1000; //increase the start time by 'DURATION' amount of minutes at every iteration
-
-      await pause(WAIT_TIME * 1000).then(() =>
-        console.log(`Sleeping for ${WAIT_TIME} seconds`),
-      ); //sleep in ms
-
       iterations--;
-    } while (iterations > 0 && startTime < Date.now() * 1000);
 
-    console.log(
-      `END synchronizing events in collection '${
-        options.collection
-      }' at ${new Date().toISOString()}`,
-    );
+      console.log(
+        `END synchronizing events at ${new Date().toISOString()}...`,
+      );
+    } while (iterations > 0 && startTime < Date.now() * 1000);
   }
 })().catch((err) => {
   console.error(err);
