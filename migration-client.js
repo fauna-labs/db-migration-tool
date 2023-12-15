@@ -91,22 +91,13 @@ class MigrationClient {
       indexName,
       startTime,
       duration,
-    }).catch((e) => {
-      throw e;
     });
 
     const collEvents = await this.#getRemoveEvents({
       collectionName,
       startTime,
       duration,
-    }).catch((e) => {
-      throw e;
     });
-
-    // console.log("DOC EVENTS");
-    // console.log(JSON.stringify(docEvents, null, 2));
-    // console.log("COLL EVENTS");
-    // console.log(JSON.stringify(collEvents, null, 2));
 
     await this.#applyEvents(docEvents, collEvents);
   }
@@ -131,13 +122,10 @@ class MigrationClient {
       "Please make sure the collection exists on the source DB",
     );
 
-    const res = await this.#sourceClient
-      .query(qry)
-      .then((ret) => ret)
-      .catch((err) => {
-        console.error("validateCollection error: %s", err);
-        throw err;
-      });
+    const res = await this.#sourceClient.query(qry).catch((err) => {
+      console.error("validateCollection error: %s", err);
+      throw err;
+    });
 
     return res;
   }
@@ -329,7 +317,7 @@ class MigrationClient {
           throw err;
         });
 
-      const new_events = res.data.map(e => e.data).flat();
+      const new_events = res.data.map((e) => e.data).flat();
 
       events.push(...new_events);
 
