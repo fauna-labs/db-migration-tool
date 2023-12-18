@@ -81,15 +81,6 @@ class MigrationClient {
   }
 
   async migrateCollection({ collectionName, indexName, startTime, duration }) {
-    console.log();
-
-    const startString = new Date(startTime / 1000).toISOString();
-    const endString = new Date(
-      startTime / 1000 + duration * 60 * 1000,
-    ).toISOString();
-
-    console.log(`Searching for events between ${startString} and ${endString}`);
-
     const docEvents = await this.#getAllEvents({
       indexName,
       startTime,
