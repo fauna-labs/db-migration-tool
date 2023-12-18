@@ -1,6 +1,6 @@
 {
   "name": "db-migration-tool",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "main.js",
   "repository": "git@github.com:fauna-labs/db-migration-tool.git",
   "author": "Fauna",
