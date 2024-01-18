@@ -35,12 +35,14 @@ class MigrationClient {
   #defaultPageSize;
   #maxParallelism;
 
-  constructor({ sourceKey, targetKey, defaultPageSize, maxParallelism }) {
+  constructor({ sourceKey, targetKey, defaultPageSize, maxParallelism, endpoint }) {
     this.#sourceClient = new fauna.Client({
       secret: sourceKey,
+      endpoint,
     });
     this.#targetClient = new fauna.Client({
       secret: targetKey,
+      endpoint,
     });
     this.#defaultPageSize = defaultPageSize;
     this.#maxParallelism = maxParallelism;

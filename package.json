@@ -13,6 +13,11 @@
   },
   "scripts": {
     "migrate": "node main.js",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:migration": "node ./__tests__/migration/index.js"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1",
+    "jest": "^29.7.0"
   }
 }
