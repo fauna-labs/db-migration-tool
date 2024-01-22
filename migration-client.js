@@ -24,6 +24,9 @@ const {
   CreateIndex,
   Do,
   IsNull,
+  Map,
+  Paginate,
+  Collections,
 } = fauna.query;
 
 const GET_EVENTS_FROM_COLLECTION = "_get_events_from_collection";
@@ -35,7 +38,13 @@ class MigrationClient {
   #defaultPageSize;
   #maxParallelism;
 
-  constructor({ sourceKey, targetKey, defaultPageSize, maxParallelism, endpoint }) {
+  constructor({
+    sourceKey,
+    targetKey,
+    defaultPageSize,
+    maxParallelism,
+    endpoint,
+  }) {
     this.#sourceClient = new fauna.Client({
       secret: sourceKey,
       endpoint,
@@ -80,15 +89,6 @@ class MigrationClient {
   }
 
   async migrateCollection({ collectionName, indexName, startTime, duration }) {
-    console.log();
-
-    const startString = new Date(startTime / 1000).toISOString();
-    const endString = new Date(
-      startTime / 1000 + duration * 60 * 1000,
-    ).toISOString();
-
-    console.log(`Searching for events between ${startString} and ${endString}`);
-
     const docEvents = await this.#getAllEvents({
       indexName,
       startTime,
@@ -104,11 +104,29 @@ class MigrationClient {
     await this.#applyEvents(docEvents, collEvents);
   }
 
+  /**
+   * List all collections in the source database.
+   *
+   * @returns {Promise<string[]>}
+   */
+  async listSourceCollections() {
+    return await this.#sourceClient.query(
+      Select(
+        "data",
+        Map(Paginate(Collections(), { size: 100000 }), (ref) =>
+          Select("id", ref),
+        ),
+      ),
+    );
+  }
+
   // ***************************************************************************
   // Private methods
   // ***************************************************************************
 
   async #validateCollection(collectionName) {
+    console.log(`  Collection("${collectionName}")`);
+
     const qry = If(
       Exists(Collection(collectionName)),
       Let(
@@ -133,6 +151,8 @@ class MigrationClient {
   }
 
   async #ensureIndex({ collectionName, indexName }) {
+    console.log(`  Index("${indexName}")`);
+
     // If the index doesn't exist, create it.
     const check_index_query = If(
       Exists(Index(indexName)),
@@ -157,6 +177,8 @@ class MigrationClient {
   }
 
   async #ensureGetEventsFromCollection() {
+    console.log(`  Function("${GET_EVENTS_FROM_COLLECTION}")`);
+
     const qry = getEventsFromCollectionFunctionQuery(
       GET_EVENTS_FROM_COLLECTION,
     );
@@ -170,6 +192,8 @@ class MigrationClient {
   }
 
   async #ensureGetRemoveEventsFromCollection() {
+    console.log(`  Function("${GET_REMOVE_EVENTS_FROM_COLLECTION}")`);
+
     const qry = getRemoveEventsFromCollectionFunctionQuery(
       GET_REMOVE_EVENTS_FROM_COLLECTION,
     );

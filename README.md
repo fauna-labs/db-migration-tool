@@ -55,21 +55,23 @@ Open a terminal, navigate to the project directory, and execute the `main.js` fi
 Example:
 ```shell
 $ cd to/my/directory/db-migration-tool
-$ node main.js --source $SOURCE_KEY --target $TARGET_KEY --collection $COLLECTION_NAME --timestamp $START_TIMESTAMP
+$ node main.js --source $SOURCE_KEY --target $TARGET_KEY --collections $C1_NAME $C2_NAME $C3_NAME --timestamp $START_TIMESTAMP
 ```
 
 CLI Options:
 ```
-  -v, --version               output the version number
-  -s, --source <string>       admin secret for the source DB
-  -t, --target <string>       admin secret for the target DB
-  -c, --collection <string>   the name of the collection to be sync'ed
-  -d, --timestamp <number>    the timestamp from which to start syncing
-  -i, --index <string>        [optional] the name of the index to use to sync the collection
-  -p, --parallelism <number>  [optional] apply up to N events per transaction (default: 10)
-  --validate <number>         [optional] paginate through documents N at a time (1000 max) and compare source to target;
-                              WARNING: this could take a long time and will accrue additional read ops
-  -h, --help                  display help for command
+  -v, --version                  output the version number
+  -s, --source <string>          admin secret for the source DB
+  -t, --target <string>          admin secret for the target DB
+  -d, --timestamp <number>       the timestamp from which to start syncing
+  -c, --collections <string...>  [optional] the list of Collection names to be sync'ed. If not provided, all collections will be sync'ed.
+  -i, --indexes <string...>      [optional] the list of Index names to be used with the respective Collections listed
+  -p, --parallelism <number>     [optional] apply up to N events per transaction (default: 10)
+  --validate <number>            [optional] paginate through documents N at a time (1000 max) and compare source to target; WARNING: this
+                                 could take a long time and will accrue additional read ops
+  --endpoint <string>            [optional] the endpoint to use for the source and target DBs (default: "https://db.fauna.com")
+  -y, --yes                      [optional] skip confirmation prompts and run the migration
+  -h, --help                     display help for command
 ```
 
 ### Indexes
