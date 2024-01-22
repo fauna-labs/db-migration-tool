@@ -10,12 +10,20 @@ const WAIT_TIME = 10; // Wait time between iterations in seconds
 const DEFAULT_PAGE_SIZE = 64; // Page size for retrieving documents from the custom index
 
 async function runMigration(options) {
-  if (!options.source) throw new Error("Error running migration: 'source' option is required")
-  if (!options.target) throw new Error("Error running migration: 'target' option is required")
-  if (!options.collection) throw new Error("Error running migration: 'collection' option is required")
-  if (!options.timestamp) throw new Error("Error running migration: 'timestamp' option is required")
-  if (!options.endpoint) throw new Error("Error running migration: 'endpoint' option is required")
-  if (!options.parallelism) throw new Error("Error running migration: 'parallelism' option is required")
+  if (!options.source)
+    throw new Error("Error running migration: 'source' option is required");
+  if (!options.target)
+    throw new Error("Error running migration: 'target' option is required");
+  if (!options.collection)
+    throw new Error("Error running migration: 'collection' option is required");
+  if (!options.timestamp)
+    throw new Error("Error running migration: 'timestamp' option is required");
+  if (!options.endpoint)
+    throw new Error("Error running migration: 'endpoint' option is required");
+  if (!options.parallelism)
+    throw new Error(
+      "Error running migration: 'parallelism' option is required",
+    );
 
   try {
     if (options.validate) {
