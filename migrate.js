@@ -1,5 +1,7 @@
 // @ts-check
 
+const inquirer = require("inquirer");
+
 const { MigrationClient } = require("./migration-client.js");
 const { pause, validate } = require("./utils.js");
 
@@ -75,6 +77,20 @@ async function runMigration(options) {
           collectionName,
           indexName,
         });
+      }
+
+      if (!options.yes) {
+        const { confirmation } = await inquirer.prompt([
+          {
+            name: "confirmation",
+            type: "confirm",
+            message: `Found ${collectionList.length} collections in the source DB. Are you sure you wish to continue migrating all collections?`,
+            default: false,
+          },
+        ]);
+        if (!confirmation) {
+          throw new Error("Migration cancelled by user.");
+        }
       }
     }
 

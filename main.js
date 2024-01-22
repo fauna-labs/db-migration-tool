@@ -1,8 +1,8 @@
 // @ts-check
 
-const { MigrationClient } = require("./migration-client.js");
-const { pause, parseParallelism, validate } = require("./utils.js");
 const { program } = require("commander");
+
+const { parseParallelism } = require("./utils.js");
 const { runMigration } = require("./migrate.js");
 
 // Start the program - first time
@@ -25,7 +25,7 @@ program
   )
   .option(
     "-c, --collections <string...>",
-    "[optional] the list of Collection names to be sync'ed",
+    "[optional] the list of Collection names to be sync'ed. If not provided, all collections will be sync'ed.",
   )
   .option(
     "-i, --indexes <string...>",
@@ -46,6 +46,10 @@ program
     "--endpoint <string>",
     "[optional] the endpoint to use for the source and target DBs",
     "https://db.fauna.com",
+  )
+  .option(
+    "-y, --yes",
+    "[optional] skip confirmation prompts and run the migration",
   )
   .parse(process.argv);
 

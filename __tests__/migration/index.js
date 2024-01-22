@@ -72,6 +72,7 @@ const testMigration = async () => {
     timestamp: phase1_start,
     endpoint: "http://localhost:8443",
     parallelism: 10,
+    yes: true,
   };
 
   console.log("  Migrating data with options:");
