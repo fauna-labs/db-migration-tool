@@ -5,17 +5,15 @@ const { MigrationClient } = require("../../migration-client");
 
 const endpoint = "http://localhost:8443";
 
-const COLLECTION_NAMES = ["C1"];
-
-const setup = async () => {
-  const root_client = new Client({
+const setup = async (collectionNames) => {
+  const rootClient = new Client({
     secret: "secret",
     endpoint: endpoint,
   });
 
   try {
     /**  @type {[string, string]} */
-    const createDBsResponse = await root_client.query(
+    const createDBsResponse = await rootClient.query(
       q.Let(
         {
           sourceName: q.Concat(["migrate_source_", q.NewId()]),
@@ -29,7 +27,7 @@ const setup = async () => {
     const [sourceName, targetName] = createDBsResponse;
 
     /**  @type {[string, string]} */
-    const createKeysResponse = await root_client.query(
+    const createKeysResponse = await rootClient.query(
       q.Let(
         {
           source_key: q.CreateKey({
@@ -58,7 +56,7 @@ const setup = async () => {
       endpoint: endpoint,
     });
 
-    const createCollectionsQuery = q.Map(COLLECTION_NAMES, (name) =>
+    const createCollectionsQuery = q.Map(collectionNames, (name) =>
       q.CreateCollection({ name, history_days: 1 }),
     );
 
@@ -80,12 +78,14 @@ const setup = async () => {
     // do this now before there is any data in the collections and the indexes
     // should be active right away
     let initialized = false;
-    do {
-      initialized = await migrationClient.initializeCollection({
-        collectionName: "C1",
-        indexName: "_migration_index_for_C1",
-      });
-    } while (!initialized);
+    for (const collectionName of collectionNames) {
+      do {
+        initialized = await migrationClient.initializeCollection({
+          collectionName,
+          indexName: `_migration_index_for_${collectionName}`,
+        });
+      } while (!initialized);
+    }
 
     return {
       sourceClient,
