@@ -55,21 +55,23 @@ Open a terminal, navigate to the project directory, and execute the `main.js` fi
 Example:
 ```shell
 $ cd to/my/directory/db-migration-tool
-$ node main.js --source $SOURCE_KEY --target $TARGET_KEY --collection $COLLECTION_NAME --timestamp $START_TIMESTAMP
+$ node main.js --source $SOURCE_KEY --target $TARGET_KEY --collections $C1_NAME $C2_NAME $C3_NAME --timestamp $START_TIMESTAMP
 ```
 
 CLI Options:
 ```
-  -v, --version               output the version number
-  -s, --source <string>       admin secret for the source DB
-  -t, --target <string>       admin secret for the target DB
-  -c, --collection <string>   the name of the collection to be sync'ed
-  -d, --timestamp <number>    the timestamp from which to start syncing
-  -i, --index <string>        [optional] the name of the index to use to sync the collection
-  -p, --parallelism <number>  [optional] apply up to N events per transaction (default: 10)
-  --validate <number>         [optional] paginate through documents N at a time (1000 max) and compare source to target;
-                              WARNING: this could take a long time and will accrue additional read ops
-  -h, --help                  display help for command
+  -v, --version                  output the version number
+  -s, --source <string>          admin secret for the source DB
+  -t, --target <string>          admin secret for the target DB
+  -d, --timestamp <number>       the timestamp from which to start syncing
+  -c, --collections <string...>  [optional] the list of Collection names to be sync'ed. If not provided, all collections will be sync'ed.
+  -i, --indexes <string...>      [optional] the list of Index names to be used with the respective Collections listed
+  -p, --parallelism <number>     [optional] apply up to N events per transaction (default: 10)
+  --validate <number>            [optional] paginate through documents N at a time (1000 max) and compare source to target; WARNING: this
+                                 could take a long time and will accrue additional read ops
+  --endpoint <string>            [optional] the endpoint to use for the source and target DBs (default: "https://db.fauna.com")
+  -y, --yes                      [optional] skip confirmation prompts and run the migration
+  -h, --help                     display help for command
 ```
 
 ### Indexes
@@ -112,16 +114,16 @@ Epoch(1698969600000000, "microseconds") // Time("2023-11-03T00:00:00Z")
 
 Several constants are defined in `main.js` that can be adjusted to optimize the performance of the tool.
 
--  `duration` - (default: 30) Time span (in minutes) to gather events
-   -  Increase the `duration` constant to widen the window of events that are processed at once, or decrease it to avoid rate limiting.
--  `iterations` - (default: 20)  Number of iterations to run the tool
-   -  The overall window of events that are processed is `duration` * `iterations` minutes.
--  `interval` - (default: 10)  Wait time between iterations in seconds
-   -  Decrease the `interval` constant to take less time between iterations, or increase it to avoid rate limiting.
--  `size` - (default: 64) Page size for retrieving documents from the custom index
+-  `DURATION` - (default: 30) Time span (in minutes) to gather events
+   -  Increase the `DURATION` constant to widen the window of events that are processed at once, or decrease it to avoid rate limiting.
+-  `ITERATIONS` - (default: 20)  Number of iterations to run the tool
+   -  The overall window of events that are processed is `DURATION` * `ITERATIONS` minutes.
+-  `WAIT_TIME` - (default: 10)  Wait time between iterations in seconds
+   -  Decrease the `WAIT_TIME` constant to take less time between iterations, or increase it to avoid rate limiting.
+-  `DEFAULT_PAGE_SIZE` - (default: 64) The default Page size for retrieving documents from the custom index
    -  If your documents are very large, you may want to decrease this value to limit the amount of data processed per transaction. Otherwise, you should not need to change this. The tool paginates through all events in the duration window. There is typically little benefit to increasing or decreasing the page size.
 
-These constants are optimized for migration of databases with a large number of events in each 30 minute window. If you want to change performance, start with the `duration` constant and adjust the others as needed.
+These constants are optimized for migration of databases with a large number of events in each 30 minute window. If you want to change performance, start with the `DURATION` constant and adjust the others as needed.
 
 For example, if you are on the Startup plan, with a [throughput limit of 1000 Writes per second](https://docs.fauna.com/fauna/current/plan_billing/plan_details#throughput-limits), then you should pick a duration that would limit the number of events to under 1000.
 
@@ -181,3 +183,16 @@ Application cutover is the action of transitioning your application from using t
 - Any new schema documents (collections, indexes) created after the snapshot was copied will not be migrated. Usage of this tool is not recommended while schema documents are modified.
 - Creates, updates, and deletes applied after the snapshot was taken will be copied in order by this script but using the current time. In other words, the `ts` field's value is not preserved.
 - Usage of history manipulation is incompatible with this script. Because this script only looks at events in time order going forward, it will miss events manipulated in the past.
+
+
+## Testing
+
+The test suite requires a running instance of the Fauna Dev docker image. See Fauna documentation for installation and setup instructions.
+
+https://docs.fauna.com/fauna/current/tools/dev
+
+Once the Fauna Dev docker image is running, you can run the test suite with the following command:
+
+```shell
+npm run test:migration
+```

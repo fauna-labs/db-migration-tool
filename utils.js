@@ -19,8 +19,8 @@ async function validate(options) {
   }
 
   const pageSize = Math.min(options.validate, 1000);
-  const sourceClient = new Client({ secret: options.source });
-  const targetClient = new Client({ secret: options.target });
+  const sourceClient = new Client({ secret: options.source, endpoint: options.endpoint });
+  const targetClient = new Client({ secret: options.target, endpoint: options.endpoint });
   const query = fql`${fql([options.collection])}.all().paginate(${pageSize})`;
 
   let sourceData, targetData;
