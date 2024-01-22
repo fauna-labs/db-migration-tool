@@ -181,3 +181,16 @@ Application cutover is the action of transitioning your application from using t
 - Any new schema documents (collections, indexes) created after the snapshot was copied will not be migrated. Usage of this tool is not recommended while schema documents are modified.
 - Creates, updates, and deletes applied after the snapshot was taken will be copied in order by this script but using the current time. In other words, the `ts` field's value is not preserved.
 - Usage of history manipulation is incompatible with this script. Because this script only looks at events in time order going forward, it will miss events manipulated in the past.
+
+
+## Testing
+
+The test suite requires a running instance of the Fauna Dev docker image. See Fauna documentation for installation and setup instructions.
+
+https://docs.fauna.com/fauna/current/tools/dev
+
+Once the Fauna Dev docker image is running, you can run the test suite with the following command:
+
+```shell
+npm run test:migration
+```
