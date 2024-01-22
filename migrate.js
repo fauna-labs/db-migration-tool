@@ -66,7 +66,7 @@ async function runMigration(options) {
         );
       }
       console.log(
-        "No collection specified. Gathering a list of all Collections in the source DB...",
+        "No '--collections' option provided. Gathering a list of all Collections in the source DB...",
       );
 
       const collectionNames = await migrator.listSourceCollections();
